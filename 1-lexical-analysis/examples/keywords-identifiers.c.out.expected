@@ -1,0 +1,10 @@
+1:1 -> 1:7          return              RETURN              
+2:1 -> 2:3          if                  IF                  
+2:4 -> 2:8          else                ELSE                
+2:9 -> 2:14         while               WHILE               
+2:15 -> 2:18        for                 FOR                 
+4:1 -> 4:4          foo                 IDENTIFIER          
+4:5 -> 4:11         foo123              IDENTIFIER          
+5:1 -> 5:8          foo_bar             IDENTIFIER          
+6:1 -> 6:2          1                   INT_LITERAL         
+6:2 -> 6:5          foo                 IDENTIFIER          

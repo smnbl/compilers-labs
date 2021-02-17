@@ -1,0 +1,4 @@
+1:1 -> 1:3          ==                  EQUALS_EQUALS       
+1:4 -> 1:6          !=                  BANG_EQUALS         
+2:1 -> 2:3          <=                  LESS_THAN_EQUALS    
+2:4 -> 2:6          >=                  GREATER_THAN_EQUALS 
