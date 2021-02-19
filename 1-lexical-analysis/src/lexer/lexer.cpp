@@ -37,9 +37,273 @@ void Lexer::lexToken() {
     advance();
 
     switch (c) {
-    default:
-        error(fmt::format("Invalid character '{}'", c));
-        break;
+        case ' ':  
+        case '\n':
+        case '\r':
+        case '\t':
+            break;
+        case ',':
+            emitToken(TokenType::COMMA);
+            break;
+        case ';':
+            emitToken(TokenType::SEMICOLON);
+            break;
+        case '(':
+            emitToken(TokenType::LEFT_PAREN);
+            break;
+        case ')':
+            emitToken(TokenType::RIGHT_PAREN);
+            break;
+        case '}':
+            emitToken(TokenType::RIGHT_BRACE);
+            break;
+        case '{':
+            emitToken(TokenType::LEFT_BRACE);
+            break;
+        case '[':
+            emitToken(TokenType::LEFT_BRACKET);
+            break;
+        case ']':
+            emitToken(TokenType::RIGHT_BRACKET);
+            break;
+        case '=':
+            
+            if (peek() == '='){
+                advance();
+                emitToken(TokenType::EQUALS_EQUALS);
+            }
+            else{
+                emitToken(TokenType::EQUALS);
+            }
+            break;
+        case '+':
+            emitToken(TokenType::PLUS);
+            break;
+        case '-':
+            emitToken(TokenType::MINUS);
+            break;
+        case '*':
+            emitToken(TokenType::STAR);
+            break;
+        case '/':
+            if (peek() == '/'){
+                while(peek()!= '\n'){
+                advance();
+                }    
+            }
+            else{
+                emitToken(TokenType::SLASH);
+            }
+            break;
+        case '^':
+            emitToken(TokenType::CARET);
+            break;
+        case '%':
+            emitToken(TokenType::PERCENT);
+            break;
+        case '<':
+            
+            if (peek() == '='){
+                advance();
+                emitToken(TokenType::LESS_THAN_EQUALS);
+            }
+            else{
+                emitToken(TokenType::LESS_THAN);
+            }
+            break;
+        case '>':
+            
+            if (peek() == '='){
+                advance();
+                emitToken(TokenType::GREATER_THAN_EQUALS);
+            }
+            else{
+                emitToken(TokenType::GREATER_THAN);
+            }
+            break;
+
+        case '!':
+            if (peek() == '='){
+                advance();
+                emitToken(TokenType::BANG_EQUALS);
+                
+            }
+            else{
+                error(fmt::format("Expected '=' after '!'"));
+            }
+            break;
+        case '.': //float starts with .
+            while (isdigit(peek()))
+            {
+                advance();
+            }
+            if (peek() =='.'){
+                advance();
+                error(fmt::format("Float literals must only contain one decimal point"));
+            }
+            else{
+                emitToken(TokenType::FLOAT_LITERAL);
+            }
+            break;
+
+        case '"':
+            while (peek() != '"'){
+                if (peek()  == '\n'){
+                    error(fmt::format("Unterminated string literal"));
+                    break;
+                }
+                advance();
+            }
+            advance();
+            emitToken(TokenType::STRING_LITERAL);
+            break;
+            
+
+        default:
+            if (isdigit(c)){
+                while(isdigit(peek())){
+                    advance();
+                }
+                if (peek() == '.'){ //float which starts with number
+                    advance();
+                    while(isdigit(peek())){
+                    advance();
+                    }
+                    if (peek() == '.'){
+                        advance();
+                        error(fmt::format("Float literals must only contain one decimal point"));
+                    }
+                    else{
+                        emitToken(TokenType::FLOAT_LITERAL);
+                    }
+
+                }
+                else{
+                    emitToken(TokenType::INT_LITERAL);
+                }
+                
+            }
+            else if (isalpha(c)){ //first is a letter
+                switch (c)
+                {
+                case 'i':
+                    
+                    if (peek() == 'f'){
+                        advance();
+                        if (!(isalpha(peek()) or isdigit(peek()) or peek() == '_')){
+                            emitToken(TokenType::IF);
+                            break;
+                        }
+                        
+                    while (isalpha(peek()) or isdigit(peek()) or peek() == '_'){
+                        advance();
+                    }
+                    emitToken(TokenType::IDENTIFIER);
+                     }
+                    break;
+                case 'f':
+                    if (peek() == 'o'){
+                        advance();
+                        if (peek() == 'r'){
+                            advance();
+                            if (!(isalpha(peek()) or isdigit(peek()) or peek() == '_')){
+                                emitToken(TokenType::FOR);
+                                break;
+                            }
+                            
+                            
+                        }
+                    }
+                    while (isalpha(peek()) or isdigit(peek()) or peek() == '_'){
+                        advance();
+                    }
+                    emitToken(TokenType::IDENTIFIER);
+                
+                    break;
+                case 'e':
+                    if (peek() == 'l'){
+                        advance();
+                        if (peek() == 's'){
+                            advance();
+                            if (peek() == 'e'){
+                                advance();
+                                if (!(isalpha(peek()) or isdigit(peek()) or peek() == '_')){
+                                    emitToken(TokenType::ELSE);
+                                    break;
+                                }
+                                
+                            }
+                            
+                        }
+                    }
+                    while (isalpha(peek()) or isdigit(peek()) or peek() == '_'){
+                        advance();
+                    }
+                    emitToken(TokenType::IDENTIFIER);
+                
+                    break;
+                case 'w':
+                    if (peek() == 'h'){
+                        advance();
+                        if (peek() == 'i'){
+                            advance();
+                            if (peek() == 'l'){
+                                advance();
+                                if (peek()=='e'){
+                                    advance();
+                                    if (!(isalpha(peek()) or isdigit(peek()) or peek() == '_')){
+                                        emitToken(TokenType::WHILE);
+                                        break;
+                                    }
+                                
+                                }
+                            }
+                            
+                        }
+                    }
+                    while (isalpha(peek()) or isdigit(peek()) or peek() == '_'){
+                        advance();
+                    }
+                    emitToken(TokenType::IDENTIFIER);
+                
+                    break;
+
+                case 'r':
+                    if (peek() == 'e'){
+                        advance();
+                        if (peek() == 't'){
+                            advance();
+                            if (peek() == 'u'){
+                                advance();
+                                if (peek()=='r'){
+                                    advance();
+                                    if (peek() == 'n'){
+                                        advance();
+                                        if (!(isalpha(peek()) or isdigit(peek()) or peek() == '_')){
+                                            emitToken(TokenType::RETURN);
+                                            break;
+                                        }
+                                    }
+                                
+                                }
+                            }
+                            
+                        }
+                    }
+                    while (isalpha(peek()) or isdigit(peek()) or peek() == '_'){
+                        advance();
+                    }
+                    emitToken(TokenType::IDENTIFIER);
+                
+                    break;
+                default:
+                    break;
+                } 
+            }
+            else{
+                error(fmt::format("Invalid character '{}'", c));
+            }
+            break;
     }
 }
 
