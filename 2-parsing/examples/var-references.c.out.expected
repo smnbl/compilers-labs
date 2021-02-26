@@ -1,0 +1,12 @@
+└── Program
+    └── FuncDecl: returnType = 'int', name = 'varrefs'
+        └── CompoundStmt
+            ├── VarDecl: type = 'int', name = 'var'
+            │   └── IntLiteral: value = '4'
+            ├── ArrayDecl: type = 'int', name = 'arr'
+            │   └── IntLiteral: value = '4'
+            ├── VarDecl: type = 'int', name = 'y'
+            │   └── VarRefExpr: name = 'var'
+            └── VarDecl: type = 'int', name = 'z'
+                └── ArrayRefExpr: name = 'arr'
+                    └── IntLiteral: value = '0'

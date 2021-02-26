@@ -1,0 +1,39 @@
+└── Program
+    ├── FuncDecl: returnType = 'int', name = 'ifs'
+    │   └── CompoundStmt
+    │       ├── IfStmt
+    │       │   ├── BinaryOpExpr: op = '=='
+    │       │   │   ├── IntLiteral: value = '1'
+    │       │   │   └── IntLiteral: value = '2'
+    │       │   └── CompoundStmt
+    │       │       └── ExprStmt
+    │       │           └── IntLiteral: value = '42'
+    │       └── IfStmt
+    │           ├── BinaryOpExpr: op = '=='
+    │           │   ├── IntLiteral: value = '1'
+    │           │   └── IntLiteral: value = '2'
+    │           ├── ExprStmt
+    │           │   └── IntLiteral: value = '42'
+    │           └── ExprStmt
+    │               └── IntLiteral: value = '64'
+    ├── FuncDecl: returnType = 'int', name = 'whiles'
+    │   └── CompoundStmt
+    │       ├── WhileStmt
+    │       │   ├── BinaryOpExpr: op = '=='
+    │       │   │   ├── IntLiteral: value = '1'
+    │       │   │   └── IntLiteral: value = '2'
+    │       │   └── CompoundStmt
+    │       │       └── ExprStmt
+    │       │           └── IntLiteral: value = '42'
+    │       └── WhileStmt
+    │           ├── BinaryOpExpr: op = '=='
+    │           │   ├── IntLiteral: value = '1'
+    │           │   └── IntLiteral: value = '2'
+    │           └── EmptyStmt
+    └── FuncDecl: returnType = 'int', name = 'returns'
+        └── CompoundStmt
+            ├── ReturnStmt
+            └── ReturnStmt
+                └── BinaryOpExpr: op = '+'
+                    ├── IntLiteral: value = '1'
+                    └── IntLiteral: value = '2'

@@ -1,0 +1,14 @@
+└── Program
+    └── FuncDecl: returnType = 'int', name = 'function'
+        └── CompoundStmt
+            ├── VarDecl: type = 'int', name = 'x'
+            │   └── FuncCallExpr: name = 'foo'
+            ├── VarDecl: type = 'int', name = 'y'
+            │   └── FuncCallExpr: name = 'bar'
+            │       └── IntLiteral: value = '1'
+            ├── VarDecl: type = 'int', name = 'z'
+            │   └── FuncCallExpr: name = 'baz'
+            │       ├── IntLiteral: value = '1'
+            │       └── VarRefExpr: name = 'y'
+            └── ExprStmt
+                └── FuncCallExpr: name = 'foobar'

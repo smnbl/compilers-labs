@@ -1,0 +1,15 @@
+└── Program
+    ├── FuncDecl: returnType = 'int', name = 'func'
+    │   ├── VarDecl: type = 'int', name = 'x'
+    │   ├── VarDecl: type = 'int', name = 'y'
+    │   └── CompoundStmt
+    │       ├── ExprStmt
+    │       │   └── IntLiteral: value = '42'
+    │       ├── CompoundStmt
+    │       │   └── VarDecl: type = 'int', name = 'z'
+    │       │       └── IntLiteral: value = '42'
+    │       └── VarDecl: type = 'int', name = 'w'
+    └── FuncDecl: returnType = 'int', name = 'main'
+        └── CompoundStmt
+            └── ArrayDecl: type = 'int', name = 'array'
+                └── IntLiteral: value = '5'

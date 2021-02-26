@@ -1,0 +1,12 @@
+└── Program
+    └── FuncDecl: returnType = 'int', name = 'varrefsconflict'
+        └── CompoundStmt
+            ├── VarDecl: type = 'int', name = 'var'
+            │   └── IntLiteral: value = '4'
+            ├── ArrayDecl: type = 'int', name = 'arr'
+            │   └── IntLiteral: value = '4'
+            ├── ExprStmt
+            │   └── VarRefExpr: name = 'var'
+            └── ExprStmt
+                └── ArrayRefExpr: name = 'arr'
+                    └── IntLiteral: value = '0'

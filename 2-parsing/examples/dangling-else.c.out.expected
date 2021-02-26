@@ -1,0 +1,11 @@
+└── Program
+    └── FuncDecl: returnType = 'int', name = 'dangling_else'
+        └── CompoundStmt
+            └── IfStmt
+                ├── IntLiteral: value = '1'
+                └── IfStmt
+                    ├── IntLiteral: value = '2'
+                    ├── ExprStmt
+                    │   └── VarRefExpr: name = 'a'
+                    └── ExprStmt
+                        └── VarRefExpr: name = 'b'
