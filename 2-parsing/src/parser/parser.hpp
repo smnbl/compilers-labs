@@ -65,6 +65,9 @@ class Parser {
     ast::Ptr<ast::IntLiteral> parseIntLiteral();
 
     // ASSIGNMENT: Declare additional parsing functions here.
+    ast::Ptr<ast::FloatLiteral> parseFloatLiteral();
+    ast::Ptr<ast::StringLiteral> parseStringLiteral();
+    ast::Ptr<ast::Expr> parseRef();
 
 };
 

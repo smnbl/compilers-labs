@@ -154,9 +154,20 @@ Ptr<Stmt> Parser::parseStmt() {
     LLVM_DEBUG(llvm::dbgs() << "In parseStmt()\n");
 
     if (peek().type == TokenType::IDENTIFIER) {
-        // vardeclstmt or arrdeclstmt
+        // vardeclstmt or arrdeclstmt OR exprstmt
+
+        // solution to 3.2: fixes the conflict (our grammar cannot be predicted based solely on the next token)
+        // we have a VarRef | ArrayRef instead of a declaration
+        if(peekNext().type != TokenType::IDENTIFIER) {
+            // exprstmt
+            Ptr<Expr> expr = parseExpr();
+            eat(TokenType::SEMICOLON);
+
+            return make_shared<ExprStmt>(expr);
+        }
 
         Token type = eat(TokenType::IDENTIFIER);
+
         Token name = eat(TokenType::IDENTIFIER);
 
         if (peek().type == TokenType::LEFT_BRACKET) {
@@ -308,12 +319,28 @@ Ptr<Expr> Parser::parseExpr() {
 }
 
 // atom = INTEGER | '(' expr ')'
+//        | FLOAT
+//        | STRING
+//        | IDENTIFIER ("[" expr "]")?
 Ptr<Expr> Parser::parseAtom() {
     LLVM_DEBUG(llvm::dbgs() << "In parseAtom()\n");
 
     if (peek().type == TokenType::INT_LITERAL) {
         // integer literal
         return parseIntLiteral();
+    }
+
+    if (peek().type == TokenType::FLOAT_LITERAL) {
+        return parseFloatLiteral();
+    }
+
+    if (peek().type == TokenType::STRING_LITERAL) {
+        return parseStringLiteral();
+    }
+
+    if (peek().type == TokenType::IDENTIFIER) {
+
+        return parseRef();
     }
 
     if (peek().type == TokenType::LEFT_PAREN) {
@@ -339,6 +366,41 @@ Ptr<IntLiteral> Parser::parseIntLiteral() {
     int value = std::stoi(tok.lexeme);
 
     return make_shared<IntLiteral>(value);
+}
+
+Ptr<FloatLiteral> Parser::parseFloatLiteral() {
+    LLVM_DEBUG(llvm::dbgs() << "In parseFloatLiteral()\n");
+
+    Token tok = eat(TokenType::FLOAT_LITERAL);
+    float value = std::stof(tok.lexeme, nullptr);
+
+    return make_shared<FloatLiteral>(value);
+}
+
+Ptr<StringLiteral> Parser::parseStringLiteral() {
+    LLVM_DEBUG(llvm::dbgs() << "In parseStringLiteral()\n");
+
+    Token tok = eat(TokenType::STRING_LITERAL);
+    std::string value = tok.lexeme.substr(1, tok.lexeme.length() - 2);
+
+    return make_shared<StringLiteral>(value);
+}
+
+// refexpr = | IDENTIFIER
+//           | IDENTIFIER "[" expr "]"
+Ptr<Expr> Parser::parseRef() {
+    LLVM_DEBUG(llvm::dbgs() << "In parseRef()\n");
+
+    Token tok = eat(TokenType::IDENTIFIER);
+
+    if (peek().type == TokenType::LEFT_BRACKET) {
+        eat(TokenType::LEFT_BRACKET);
+        Ptr<Expr> expr = Parser::parseExpr();
+        eat(TokenType::RIGHT_BRACKET);
+        return make_shared<ArrayRefExpr>(tok, expr);
+    }
+
+    return make_shared<VarRefExpr>(tok);
 }
 
 // ASSIGNMENT: Define additional parsing functions here.
