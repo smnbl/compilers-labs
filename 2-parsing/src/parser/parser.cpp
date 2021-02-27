@@ -145,7 +145,11 @@ List<Ptr<VarDecl>> Parser::parseFuncDeclArgs() {
     return args;
 }
 
-// stmt = "for" "(" forinit expr ";" expr ")" stmt
+// stmt = 
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "for" "(" forinit expr ";" expr ")" stmt
+//      | "while" "(" expr ")" stmt
+//      | "return" expr? ";"
 //      | exprstmt | vardeclstmt | arrdeclstmt | "{" stmt* "}" | ";"
 // exprstmt = expr ";"
 // vardeclstmt = IDENTIFIER IDENTIFIER ("=" expr)? ";"
@@ -242,6 +246,43 @@ Ptr<Stmt> Parser::parseStmt() {
     }
 
     // ASSIGNMENT: Add additional statements here
+    if (peek().type == TokenType::IF) {
+        eat(TokenType::IF);
+        eat(TokenType::LEFT_PAREN);
+        auto condition = parseExpr();
+        eat(TokenType::RIGHT_PAREN);
+        
+        Ptr<Stmt> if_clause = parseStmt();
+        Ptr<Stmt> else_clause = nullptr;
+
+        if(peek().type == TokenType::ELSE) {
+            eat(TokenType::ELSE);
+            else_clause = parseStmt();
+        }
+
+        return make_shared<IfStmt>(condition, if_clause, else_clause);
+    }
+
+    if(peek().type == TokenType::WHILE) {
+        eat(TokenType::WHILE);
+        eat(TokenType::LEFT_PAREN);
+        auto condition = parseExpr();
+        eat(TokenType::RIGHT_PAREN);
+        auto body = parseStmt();
+
+        return make_shared<WhileStmt>(condition, body);
+    }
+
+    if(peek().type == TokenType::RETURN) {
+        eat(TokenType::RETURN);
+        if (peek().type != TokenType::SEMICOLON) {
+            auto expr = parseExpr();
+            eat(TokenType::SEMICOLON);
+            return make_shared<ReturnStmt>(expr);
+        }
+        eat(TokenType::SEMICOLON);
+        return make_shared<ReturnStmt>();
+    }
 
     // exprstmt
     Ptr<Expr> expr = parseExpr();
