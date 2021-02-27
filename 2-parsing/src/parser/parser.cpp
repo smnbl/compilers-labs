@@ -153,18 +153,10 @@ List<Ptr<VarDecl>> Parser::parseFuncDeclArgs() {
 Ptr<Stmt> Parser::parseStmt() {
     LLVM_DEBUG(llvm::dbgs() << "In parseStmt()\n");
 
-    if (peek().type == TokenType::IDENTIFIER) {
-        // vardeclstmt or arrdeclstmt OR exprstmt
-
-        // solution to 3.2: fixes the conflict (our grammar cannot be predicted based solely on the next token)
-        // we have a VarRef | ArrayRef instead of a declaration
-        if(peekNext().type != TokenType::IDENTIFIER) {
-            // exprstmt
-            Ptr<Expr> expr = parseExpr();
-            eat(TokenType::SEMICOLON);
-
-            return make_shared<ExprStmt>(expr);
-        }
+    // solution to 3.2: fixes the conflict (our grammar cannot be predicted based solely on the next token)
+    // we have a VarRef | ArrayRef instead of a declaration
+    if (peek().type == TokenType::IDENTIFIER && peekNext().type == TokenType::IDENTIFIER) {
+        // vardeclstmt or arrdeclstmt 
 
         Token type = eat(TokenType::IDENTIFIER);
 
@@ -314,33 +306,146 @@ Ptr<CompoundStmt> Parser::parseCompoundStmt() {
 Ptr<Expr> Parser::parseExpr() {
     LLVM_DEBUG(llvm::dbgs() << "In parseExpr()\n");
 
-    return parseAtom();
+    return parseAssignment();
+}
 
+Ptr<Expr> Parser::parseAssignment() {
+    auto lhs = parseEquality();
+
+    if (peek().type != TokenType::EQUALS) {
+       return lhs; 
+    }
+
+    auto tok = eat(TokenType::EQUALS);
+    auto rhs = parseAssignment();
+
+    return make_shared<BinaryOpExpr>(lhs, tok, rhs);
+}
+
+Ptr<Expr> Parser::parseEquality() {
+    auto lhs = parseComparison();
+
+    if (peek().type == TokenType::EQUALS_EQUALS || peek().type == TokenType::BANG_EQUALS) {
+        auto tok = eat(peek().type);
+        auto rhs = parseComparison();
+        if (peek().type == TokenType::EQUALS_EQUALS || peek().type == TokenType::BANG_EQUALS) {
+            throw error("non-associative operators may not be used multiple times in a row");
+        }
+        return make_shared<BinaryOpExpr>(lhs, tok, rhs);
+    }
+
+    return lhs;
+}
+
+Ptr<Expr> Parser::parseComparison() {
+    auto lhs = parseAdditive();
+
+    if (   peek().type == TokenType::LESS_THAN 
+        || peek().type == TokenType::LESS_THAN_EQUALS 
+        || peek().type == TokenType::GREATER_THAN
+        || peek().type == TokenType::GREATER_THAN_EQUALS) {
+
+        auto tok = eat(peek().type);
+        auto rhs = parseAdditive();
+
+        if (   peek().type == TokenType::LESS_THAN 
+            || peek().type == TokenType::LESS_THAN_EQUALS 
+            || peek().type == TokenType::GREATER_THAN
+            || peek().type == TokenType::GREATER_THAN_EQUALS) {
+            throw error("non-associative operators may not be used multiple times in a row");
+        }
+
+        return make_shared<BinaryOpExpr>(lhs, tok, rhs);
+    }
+
+    return lhs;
+}
+
+Ptr<Expr> Parser::parseAdditive() {
+    Ptr<Expr> expr = parseMultiplicative();
+
+    // perform left-to-right associativity using a while loop
+    while (1) {
+        if(peek().type == TokenType::PLUS) {
+            auto tok = eat(TokenType::PLUS);
+            auto c2 = parseMultiplicative();
+            expr = make_shared<BinaryOpExpr>(expr, tok, c2);
+        } else if(peek().type == TokenType::MINUS) {
+            auto tok = eat(TokenType::MINUS);
+            auto c2 = parseMultiplicative();
+            expr = make_shared<BinaryOpExpr>(expr, tok, c2);
+        } else {
+            break;
+        }
+    }
+
+    return expr;
+}
+
+Ptr<Expr> Parser::parseMultiplicative() {
+    Ptr<Expr> expr = parseUnary();
+
+    // perform left-to-right associativity using a while loop
+    while (1) {
+        if(peek().type == TokenType::STAR) {
+            auto tok = eat(TokenType::STAR);
+            auto c2 = parseUnary();
+            expr = make_shared<BinaryOpExpr>(expr, tok, c2);
+        } else if(peek().type == TokenType::SLASH) {
+            auto tok = eat(TokenType::SLASH);
+            auto c2 = parseUnary();
+            expr = make_shared<BinaryOpExpr>(expr, tok, c2);
+        } else if(peek().type == TokenType::PERCENT) {
+            auto tok = eat(TokenType::PERCENT);
+            auto c2 = parseUnary();
+            expr = make_shared<BinaryOpExpr>(expr, tok, c2);
+        } else {
+            break;
+        }
+    }
+
+    return expr;
+}
+
+Ptr<Expr> Parser::parseUnary() {
+    switch(peek().type) {
+        case TokenType::MINUS: {
+                auto tok = eat(TokenType::MINUS);
+                auto value = parseUnary();
+                return make_shared<UnaryOpExpr>(tok, value);
+            }
+        case TokenType::PLUS: {
+                auto tok = eat(TokenType::PLUS);
+                auto value = parseUnary();
+                return make_shared<UnaryOpExpr>(tok, value);
+            }
+        default:
+            return parseExponent();
+    }
+}
+
+Ptr<Expr> Parser::parseExponent() {
+    auto lhs = parseAtom();
+    if (peek().type == TokenType::CARET) {
+        auto tok = eat(TokenType::CARET);
+        auto rhs = parseExponent();
+        return make_shared<BinaryOpExpr>(lhs, tok, rhs);
+    }
+
+    return lhs;
 }
 
 // atom = INTEGER | '(' expr ')'
 //        | FLOAT
 //        | STRING
-//        | IDENTIFIER ("[" expr "]")?
+//        | IDENTIFIER ("[" expr "]")? // variable references
+//        | IDENTIFIER "(" expr_arg_list? ")" // funccallexpression
 Ptr<Expr> Parser::parseAtom() {
     LLVM_DEBUG(llvm::dbgs() << "In parseAtom()\n");
 
     if (peek().type == TokenType::INT_LITERAL) {
         // integer literal
         return parseIntLiteral();
-    }
-
-    if (peek().type == TokenType::FLOAT_LITERAL) {
-        return parseFloatLiteral();
-    }
-
-    if (peek().type == TokenType::STRING_LITERAL) {
-        return parseStringLiteral();
-    }
-
-    if (peek().type == TokenType::IDENTIFIER) {
-
-        return parseRef();
     }
 
     if (peek().type == TokenType::LEFT_PAREN) {
@@ -354,9 +459,28 @@ Ptr<Expr> Parser::parseAtom() {
 
     // ASSIGNMENT: Add additional atoms here.
 
+    if (peek().type == TokenType::FLOAT_LITERAL) {
+        return parseFloatLiteral();
+    }
+
+    if (peek().type == TokenType::STRING_LITERAL) {
+        return parseStringLiteral();
+    }
+
+    if (peek().type == TokenType::IDENTIFIER && peekNext().type == TokenType::LEFT_PAREN) {
+        return parseFuncCallExpr();
+    }
+
+    if (peek().type == TokenType::IDENTIFIER) {
+
+        return parseRef();
+    }
+
     throw error(fmt::format("Unexpected token type '{}' for atom",
                             token_type_to_string(peek().type)));
 }
+
+// ASSIGNMENT: Define additional parsing functions here.
 
 // intliteral = INTEGER
 Ptr<IntLiteral> Parser::parseIntLiteral() {
@@ -403,5 +527,25 @@ Ptr<Expr> Parser::parseRef() {
     return make_shared<VarRefExpr>(tok);
 }
 
-// ASSIGNMENT: Define additional parsing functions here.
+Ptr<FuncCallExpr> Parser::parseFuncCallExpr() {
+    List<Ptr<Expr>> arguments{};
+    LLVM_DEBUG(llvm::dbgs() << "In parseFuncCall()\n");
 
+    Token name = eat(TokenType::IDENTIFIER);
+    eat(TokenType::LEFT_PAREN);
+    
+    if(peek().type != TokenType::RIGHT_PAREN) {
+        // parse first argument
+        arguments.push_back(parseExpr());
+
+        // parse the rest
+        while(peek().type == TokenType::COMMA) {
+            eat(TokenType::COMMA);
+            arguments.push_back(parseExpr());
+        }
+    }
+
+    eat(TokenType::RIGHT_PAREN);
+
+    return make_shared<FuncCallExpr>(name, arguments);
+}

@@ -68,6 +68,14 @@ class Parser {
     ast::Ptr<ast::FloatLiteral> parseFloatLiteral();
     ast::Ptr<ast::StringLiteral> parseStringLiteral();
     ast::Ptr<ast::Expr> parseRef();
+    ast::Ptr<ast::FuncCallExpr> parseFuncCallExpr();
+    ast::Ptr<ast::Expr> parseAssignment();
+    ast::Ptr<ast::Expr> parseEquality();
+    ast::Ptr<ast::Expr> parseComparison();
+    ast::Ptr<ast::Expr> parseAdditive();
+    ast::Ptr<ast::Expr> parseMultiplicative();
+    ast::Ptr<ast::Expr> parseUnary();
+    ast::Ptr<ast::Expr> parseExponent();
 
 };
 
