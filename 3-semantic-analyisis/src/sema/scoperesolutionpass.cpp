@@ -53,9 +53,16 @@ void sema::ScopeResolutionPass::visitProgram(ast::Program &node) {
 void sema::ScopeResolutionPass::visitFuncDecl(ast::FuncDecl &node) {
     // ASSIGNMENT: Implement scope resolution.
 
+    // Open function scope (arguments)
+    pushScope();
+
     for (const auto &arg : node.arguments)
         visit(*arg);
+
     visit(*node.body);
+
+    // Pop function scope (arguments)
+    popScope();
 }
 
 void sema::ScopeResolutionPass::visitIfStmt(ast::IfStmt &node) {
@@ -75,16 +82,18 @@ void sema::ScopeResolutionPass::visitWhileStmt(ast::WhileStmt &node) {
 }
 
 void sema::ScopeResolutionPass::visitVarDecl(ast::VarDecl &node) {
-    // ASSIGNMENT: Implement scope resolution.
-
+    // visit right hand side first!
     if (node.init)
         visit(*node.init);
+
+    define(node.name.lexeme, &node);
 }
 
 void sema::ScopeResolutionPass::visitArrayDecl(ast::ArrayDecl &node) {
-    // ASSIGNMENT: Implement scope resolution.
-
+    // visit right hand side first!
     visit(*node.size);
+
+    define(node.name.lexeme, &node);
 }
 
 void sema::ScopeResolutionPass::visitCompoundStmt(ast::CompoundStmt &node) {
@@ -97,11 +106,13 @@ void sema::ScopeResolutionPass::visitCompoundStmt(ast::CompoundStmt &node) {
 }
 
 void sema::ScopeResolutionPass::visitVarRefExpr(ast::VarRefExpr &node) {
-    // ASSIGNMENT: Implement scope resolution.
+    auto definition = resolve(node.name.lexeme);
+    symbol_table[&node] = definition;
 }
 
 void sema::ScopeResolutionPass::visitArrayRefExpr(ast::ArrayRefExpr &node) {
-    // ASSIGNMENT: Implement scope resolution.
+    auto definition = resolve(node.name.lexeme);
+    symbol_table[&node] = definition;
 
     visit(*node.index);
 }
