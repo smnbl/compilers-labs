@@ -1,0 +1,28 @@
+└── Program <16>
+    └── FuncDecl: returnType = 'int', name = 'variables_typecheck' <15>
+        ├── VarDecl: type = 'int', name = 'i' <0>
+        ├── VarDecl: type = 'float', name = 'f' <1>
+        ├── VarDecl: type = 'string', name = 's' <2>
+        └── CompoundStmt <14>
+            ├── ExprStmt <4>
+            │   └── VarRefExpr: name = 'i' <3>
+            ├── ExprStmt <6>
+            │   └── VarRefExpr: name = 'f' <5>
+            ├── ExprStmt <8>
+            │   └── VarRefExpr: name = 's' <7>
+            ├── ArrayDecl: type = 'float', name = 'foo' <10>
+            │   └── IntLiteral: value = '2' <9>
+            └── ExprStmt <13>
+                └── ArrayRefExpr: name = 'foo' <12>
+                    └── IntLiteral: value = '0' <11>
+Type table:
+0                   i64
+1                   float
+2                   i8*
+3                   i64
+5                   float
+9                   i64
+7                   i8*
+10                  [2 x float]
+11                  i64
+12                  float

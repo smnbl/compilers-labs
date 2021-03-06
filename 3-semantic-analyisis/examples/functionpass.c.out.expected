@@ -1,0 +1,11 @@
+└── Program <7>
+    ├── FuncDecl: returnType = 'int', name = 'f1' <1>
+    │   └── CompoundStmt <0>
+    └── FuncDecl: returnType = 'float', name = 'f2' <6>
+        ├── VarDecl: type = 'int', name = 'x' <2>
+        ├── VarDecl: type = 'float', name = 'y' <3>
+        ├── VarDecl: type = 'string', name = 'z' <4>
+        └── CompoundStmt <5>
+Function table:
+f1                  i64 ()
+f2                  float (i64, float, i8*)

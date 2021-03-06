@@ -1,0 +1,5 @@
+└── Program <4>
+    └── FuncDecl: returnType = 'int', name = 'foo' <3>
+        └── CompoundStmt <2>
+            └── ReturnStmt <1>
+                └── IntLiteral: value = '2' <0>

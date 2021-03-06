@@ -1,0 +1,89 @@
+└── Program <48>
+    └── FuncDecl: returnType = 'int', name = 'operators' <47>
+        └── CompoundStmt <46>
+            ├── ExprStmt <13>
+            │   └── BinaryOpExpr: op = '-' <12>
+            │       ├── BinaryOpExpr: op = '+' <10>
+            │       │   ├── BinaryOpExpr: op = '%' <8>
+            │       │   │   ├── BinaryOpExpr: op = '/' <6>
+            │       │   │   │   ├── BinaryOpExpr: op = '*' <4>
+            │       │   │   │   │   ├── BinaryOpExpr: op = '^' <2>
+            │       │   │   │   │   │   ├── IntLiteral: value = '1' <0>
+            │       │   │   │   │   │   └── IntLiteral: value = '2' <1>
+            │       │   │   │   │   └── IntLiteral: value = '3' <3>
+            │       │   │   │   └── IntLiteral: value = '4' <5>
+            │       │   │   └── IntLiteral: value = '5' <7>
+            │       │   └── IntLiteral: value = '6' <9>
+            │       └── IntLiteral: value = '7' <11>
+            ├── ExprStmt <27>
+            │   └── BinaryOpExpr: op = '-' <26>
+            │       ├── BinaryOpExpr: op = '+' <24>
+            │       │   ├── BinaryOpExpr: op = '%' <22>
+            │       │   │   ├── BinaryOpExpr: op = '/' <20>
+            │       │   │   │   ├── BinaryOpExpr: op = '*' <18>
+            │       │   │   │   │   ├── BinaryOpExpr: op = '^' <16>
+            │       │   │   │   │   │   ├── FloatLiteral: value = '1' <14>
+            │       │   │   │   │   │   └── FloatLiteral: value = '2' <15>
+            │       │   │   │   │   └── FloatLiteral: value = '3' <17>
+            │       │   │   │   └── FloatLiteral: value = '4' <19>
+            │       │   │   └── FloatLiteral: value = '5' <21>
+            │       │   └── FloatLiteral: value = '6' <23>
+            │       └── FloatLiteral: value = '7' <25>
+            ├── ExprStmt <31>
+            │   └── BinaryOpExpr: op = '==' <30>
+            │       ├── IntLiteral: value = '1' <28>
+            │       └── IntLiteral: value = '2' <29>
+            ├── ExprStmt <35>
+            │   └── BinaryOpExpr: op = '<' <34>
+            │       ├── FloatLiteral: value = '1' <32>
+            │       └── FloatLiteral: value = '3' <33>
+            ├── ExprStmt <38>
+            │   └── UnaryOpExpr: op = '+' <37>
+            │       └── IntLiteral: value = '1' <36>
+            ├── ExprStmt <41>
+            │   └── UnaryOpExpr: op = '-' <40>
+            │       └── FloatLiteral: value = '2' <39>
+            └── ExprStmt <45>
+                └── BinaryOpExpr: op = '=' <44>
+                    ├── StringLiteral: value = 'foo' <42>
+                    └── StringLiteral: value = 'bar' <43>
+Type table:
+1                   i64
+0                   i64
+3                   i64
+42                  i8*
+2                   i64
+10                  i64
+11                  i64
+12                  i64
+14                  float
+15                  float
+16                  float
+17                  float
+18                  float
+19                  float
+20                  float
+21                  float
+22                  float
+23                  float
+24                  float
+25                  float
+26                  float
+32                  float
+28                  i64
+29                  i64
+30                  i64
+4                   i64
+5                   i64
+6                   i64
+7                   i64
+8                   i64
+9                   i64
+33                  float
+34                  i64
+36                  i64
+37                  i64
+39                  float
+40                  float
+43                  i8*
+44                  i8*

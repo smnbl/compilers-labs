@@ -1,0 +1,45 @@
+└── Program <34>
+    ├── FuncDecl: returnType = 'int', name = 'sum' <15>
+    │   ├── VarDecl: type = 'int', name = 'x' <0>
+    │   ├── VarDecl: type = 'int', name = 'y' <1>
+    │   └── CompoundStmt <14>
+    │       ├── VarDecl: type = 'int', name = 'res' <5>
+    │       │   └── BinaryOpExpr: op = '+' <4>
+    │       │       ├── VarRefExpr: name = 'x' <2>
+    │       │       └── VarRefExpr: name = 'y' <3>
+    │       ├── VarDecl: type = 'int', name = 'x' <6>
+    │       ├── ArrayDecl: type = 'int', name = 'y' <8>
+    │       │   └── IntLiteral: value = '2' <7>
+    │       └── ReturnStmt <13>
+    │           └── BinaryOpExpr: op = '+' <12>
+    │               ├── VarRefExpr: name = 'x' <9>
+    │               └── ArrayRefExpr: name = 'y' <11>
+    │                   └── IntLiteral: value = '0' <10>
+    └── FuncDecl: returnType = 'int', name = 'difference' <33>
+        ├── VarDecl: type = 'int', name = 'x' <16>
+        ├── VarDecl: type = 'int', name = 'z' <17>
+        └── CompoundStmt <32>
+            ├── VarDecl: type = 'int', name = 'res' <21>
+            │   └── BinaryOpExpr: op = '-' <20>
+            │       ├── VarRefExpr: name = 'x' <18>
+            │       └── VarRefExpr: name = 'z' <19>
+            ├── VarDecl: type = 'int', name = 'x' <22>
+            ├── ArrayDecl: type = 'int', name = 'y' <24>
+            │   └── IntLiteral: value = '2' <23>
+            └── ReturnStmt <31>
+                └── BinaryOpExpr: op = '+' <30>
+                    ├── VarRefExpr: name = 'x' <25>
+                    └── BinaryOpExpr: op = '*' <29>
+                        ├── ArrayRefExpr: name = 'y' <27>
+                        │   └── IntLiteral: value = '0' <26>
+                        └── VarRefExpr: name = 'z' <28>
+Symbol table:
+2                   0                   
+3                   1                   
+9                   6                   
+11                  8                   
+18                  16                  
+19                  17                  
+25                  22                  
+27                  24                  
+28                  17                  

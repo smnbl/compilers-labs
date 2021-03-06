@@ -1,0 +1,9 @@
+sema: error: 4:5: Array subscript must be an integer
+└── Program <7>
+    └── FuncDecl: returnType = 'int', name = 'array_index_wrong_type' <6>
+        └── CompoundStmt <5>
+            ├── ArrayDecl: type = 'int', name = 'a' <1>
+            │   └── IntLiteral: value = '10' <0>
+            └── ExprStmt <4>
+                └── ArrayRefExpr: name = 'a' <3>
+                    └── StringLiteral: value = 'two' <2>

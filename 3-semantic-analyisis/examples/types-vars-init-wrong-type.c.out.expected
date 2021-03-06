@@ -1,0 +1,6 @@
+sema: error: 3:9: Type of initializer does not match type of variable
+└── Program <4>
+    └── FuncDecl: returnType = 'int', name = 'initializer_wrong_type' <3>
+        └── CompoundStmt <2>
+            └── VarDecl: type = 'int', name = 'x' <1>
+                └── FloatLiteral: value = '5' <0>

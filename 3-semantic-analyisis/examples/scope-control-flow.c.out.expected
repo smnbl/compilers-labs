@@ -1,0 +1,138 @@
+└── Program <109>
+    ├── FuncDecl: returnType = 'void', name = 'ifstmts' <34>
+    │   ├── VarDecl: type = 'int', name = 'x' <0>
+    │   └── CompoundStmt <33>
+    │       ├── IfStmt <18>
+    │       │   ├── BinaryOpExpr: op = '==' <3>
+    │       │   │   ├── VarRefExpr: name = 'x' <1>
+    │       │   │   └── IntLiteral: value = '0' <2>
+    │       │   ├── CompoundStmt <10>
+    │       │   │   ├── VarDecl: type = 'int', name = 'x' <7>
+    │       │   │   │   └── BinaryOpExpr: op = '*' <6>
+    │       │   │   │       ├── IntLiteral: value = '10' <4>
+    │       │   │   │       └── VarRefExpr: name = 'x' <5>
+    │       │   │   └── ExprStmt <9>
+    │       │   │       └── VarRefExpr: name = 'x' <8>
+    │       │   └── CompoundStmt <17>
+    │       │       ├── VarDecl: type = 'int', name = 'x' <14>
+    │       │       │   └── BinaryOpExpr: op = '*' <13>
+    │       │       │       ├── IntLiteral: value = '20' <11>
+    │       │       │       └── VarRefExpr: name = 'x' <12>
+    │       │       └── ExprStmt <16>
+    │       │           └── VarRefExpr: name = 'x' <15>
+    │       ├── IfStmt <30>
+    │       │   ├── BinaryOpExpr: op = '==' <21>
+    │       │   │   ├── VarRefExpr: name = 'x' <19>
+    │       │   │   └── IntLiteral: value = '0' <20>
+    │       │   ├── VarDecl: type = 'int', name = 'x' <25>
+    │       │   │   └── BinaryOpExpr: op = '*' <24>
+    │       │   │       ├── IntLiteral: value = '10' <22>
+    │       │   │       └── VarRefExpr: name = 'x' <23>
+    │       │   └── VarDecl: type = 'int', name = 'x' <29>
+    │       │       └── BinaryOpExpr: op = '*' <28>
+    │       │           ├── IntLiteral: value = '20' <26>
+    │       │           └── VarRefExpr: name = 'x' <27>
+    │       └── ExprStmt <32>
+    │           └── VarRefExpr: name = 'x' <31>
+    ├── FuncDecl: returnType = 'void', name = 'whilestmts' <58>
+    │   ├── VarDecl: type = 'int', name = 'x' <35>
+    │   └── CompoundStmt <57>
+    │       ├── WhileStmt <46>
+    │       │   ├── BinaryOpExpr: op = '==' <38>
+    │       │   │   ├── VarRefExpr: name = 'x' <36>
+    │       │   │   └── IntLiteral: value = '0' <37>
+    │       │   └── CompoundStmt <45>
+    │       │       ├── VarDecl: type = 'int', name = 'x' <42>
+    │       │       │   └── BinaryOpExpr: op = '*' <41>
+    │       │       │       ├── IntLiteral: value = '10' <39>
+    │       │       │       └── VarRefExpr: name = 'x' <40>
+    │       │       └── ExprStmt <44>
+    │       │           └── VarRefExpr: name = 'x' <43>
+    │       ├── WhileStmt <54>
+    │       │   ├── BinaryOpExpr: op = '==' <49>
+    │       │   │   ├── VarRefExpr: name = 'x' <47>
+    │       │   │   └── IntLiteral: value = '0' <48>
+    │       │   └── VarDecl: type = 'int', name = 'x' <53>
+    │       │       └── BinaryOpExpr: op = '*' <52>
+    │       │           ├── IntLiteral: value = '10' <50>
+    │       │           └── VarRefExpr: name = 'x' <51>
+    │       └── ExprStmt <56>
+    │           └── VarRefExpr: name = 'x' <55>
+    └── FuncDecl: returnType = 'void', name = 'forstmts' <108>
+        ├── VarDecl: type = 'int', name = 'x' <59>
+        └── CompoundStmt <107>
+            ├── CompoundStmt <83>
+            │   ├── VarDecl: type = 'int', name = 'x' <63>
+            │   │   └── BinaryOpExpr: op = '*' <62>
+            │   │       ├── IntLiteral: value = '10' <60>
+            │   │       └── VarRefExpr: name = 'x' <61>
+            │   └── WhileStmt <82>
+            │       ├── BinaryOpExpr: op = '<' <66>
+            │       │   ├── VarRefExpr: name = 'x' <64>
+            │       │   └── IntLiteral: value = '100' <65>
+            │       └── CompoundStmt <81>
+            │           ├── CompoundStmt <79>
+            │           │   └── CompoundStmt <78>
+            │           │       ├── VarDecl: type = 'int', name = 'x' <75>
+            │           │       │   └── BinaryOpExpr: op = '*' <74>
+            │           │       │       ├── IntLiteral: value = '20' <72>
+            │           │       │       └── VarRefExpr: name = 'x' <73>
+            │           │       └── ExprStmt <77>
+            │           │           └── VarRefExpr: name = 'x' <76>
+            │           └── ExprStmt <80>
+            │               └── BinaryOpExpr: op = '=' <71>
+            │                   ├── VarRefExpr: name = 'x' <67>
+            │                   └── BinaryOpExpr: op = '+' <70>
+            │                       ├── VarRefExpr: name = 'x' <68>
+            │                       └── IntLiteral: value = '1' <69>
+            ├── CompoundStmt <104>
+            │   ├── VarDecl: type = 'int', name = 'x' <87>
+            │   │   └── BinaryOpExpr: op = '*' <86>
+            │   │       ├── IntLiteral: value = '10' <84>
+            │   │       └── VarRefExpr: name = 'x' <85>
+            │   └── WhileStmt <103>
+            │       ├── BinaryOpExpr: op = '<' <90>
+            │       │   ├── VarRefExpr: name = 'x' <88>
+            │       │   └── IntLiteral: value = '100' <89>
+            │       └── CompoundStmt <102>
+            │           ├── CompoundStmt <100>
+            │           │   └── VarDecl: type = 'int', name = 'x' <99>
+            │           │       └── BinaryOpExpr: op = '*' <98>
+            │           │           ├── IntLiteral: value = '20' <96>
+            │           │           └── VarRefExpr: name = 'x' <97>
+            │           └── ExprStmt <101>
+            │               └── BinaryOpExpr: op = '=' <95>
+            │                   ├── VarRefExpr: name = 'x' <91>
+            │                   └── BinaryOpExpr: op = '+' <94>
+            │                       ├── VarRefExpr: name = 'x' <92>
+            │                       └── IntLiteral: value = '1' <93>
+            └── ExprStmt <106>
+                └── VarRefExpr: name = 'x' <105>
+Symbol table:
+1                   0                   
+5                   0                   
+8                   7                   
+12                  0                   
+15                  14                  
+19                  0                   
+23                  0                   
+27                  0                   
+31                  0                   
+36                  35                  
+40                  35                  
+43                  42                  
+47                  35                  
+51                  35                  
+55                  35                  
+61                  59                  
+64                  63                  
+67                  63                  
+68                  63                  
+73                  63                  
+76                  75                  
+85                  59                  
+88                  87                  
+91                  87                  
+92                  87                  
+97                  87                  
+105                 59                  

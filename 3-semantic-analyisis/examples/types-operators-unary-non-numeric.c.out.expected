@@ -1,0 +1,7 @@
+sema: error: 5:5: Invalid operand type to unary operator '-'
+└── Program <5>
+    └── FuncDecl: returnType = 'int', name = 'types' <4>
+        └── CompoundStmt <3>
+            └── ExprStmt <2>
+                └── UnaryOpExpr: op = '-' <1>
+                    └── StringLiteral: value = 'foo' <0>

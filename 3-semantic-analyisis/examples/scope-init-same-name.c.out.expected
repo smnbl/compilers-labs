@@ -1,0 +1,13 @@
+└── Program <9>
+    └── FuncDecl: returnType = 'int', name = 'foo' <8>
+        ├── VarDecl: type = 'int', name = 'x' <0>
+        └── CompoundStmt <7>
+            ├── VarDecl: type = 'int', name = 'x' <4>
+            │   └── BinaryOpExpr: op = '+' <3>
+            │       ├── VarRefExpr: name = 'x' <1>
+            │       └── IntLiteral: value = '2' <2>
+            └── ReturnStmt <6>
+                └── VarRefExpr: name = 'x' <5>
+Symbol table:
+1                   0                   
+5                   4                   

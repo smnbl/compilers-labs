@@ -1,0 +1,11 @@
+sema: error: Undefined variable 'does_not_exist'
+└── Program <9>
+    └── FuncDecl: returnType = 'int', name = 'foo' <8>
+        ├── VarDecl: type = 'int', name = 'arg0' <0>
+        ├── VarDecl: type = 'int', name = 'arg1' <1>
+        └── CompoundStmt <7>
+            ├── VarDecl: type = 'int', name = 'var0' <2>
+            ├── VarDecl: type = 'int', name = 'var1' <3>
+            ├── VarDecl: type = 'int', name = 'var2' <4>
+            └── ReturnStmt <6>
+                └── VarRefExpr: name = 'does_not_exist' <5>

@@ -1,0 +1,8 @@
+sema: error: 3:7: Invalid operand types to binary operator '^'
+└── Program <6>
+    └── FuncDecl: returnType = 'int', name = 'mixing_types_is_wrong' <5>
+        └── CompoundStmt <4>
+            └── ExprStmt <3>
+                └── BinaryOpExpr: op = '^' <2>
+                    ├── IntLiteral: value = '1' <0>
+                    └── FloatLiteral: value = '2' <1>

@@ -1,0 +1,8 @@
+sema: error: 3:14: Invalid operand types to binary operator '+'
+└── Program <6>
+    └── FuncDecl: returnType = 'int', name = 'only_for_numeric_types' <5>
+        └── CompoundStmt <4>
+            └── ExprStmt <3>
+                └── BinaryOpExpr: op = '+' <2>
+                    ├── StringLiteral: value = 'cannot' <0>
+                    └── StringLiteral: value = 'add strings' <1>

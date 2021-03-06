@@ -1,0 +1,10 @@
+sema: error: Undefined variable 'x'
+└── Program <8>
+    └── FuncDecl: returnType = 'int', name = 'foo' <7>
+        └── CompoundStmt <6>
+            ├── VarDecl: type = 'int', name = 'x' <3>
+            │   └── BinaryOpExpr: op = '+' <2>
+            │       ├── VarRefExpr: name = 'x' <0>
+            │       └── IntLiteral: value = '2' <1>
+            └── ReturnStmt <5>
+                └── VarRefExpr: name = 'x' <4>

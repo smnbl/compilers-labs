@@ -1,0 +1,6 @@
+sema: error: Cannot redefine variable 'x'
+└── Program <4>
+    └── FuncDecl: returnType = 'int', name = 'foo' <3>
+        └── CompoundStmt <2>
+            ├── VarDecl: type = 'int', name = 'x' <0>
+            └── VarDecl: type = 'int', name = 'x' <1>

@@ -1,0 +1,10 @@
+sema: error: Condition for a while statement must be an integer
+└── Program <8>
+    └── FuncDecl: returnType = 'int', name = 'whilecond' <7>
+        └── CompoundStmt <6>
+            ├── WhileStmt <2>
+            │   ├── IntLiteral: value = '1' <0>
+            │   └── CompoundStmt <1>
+            └── WhileStmt <5>
+                ├── FloatLiteral: value = '1' <3>
+                └── CompoundStmt <4>
