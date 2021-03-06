@@ -1,0 +1,35 @@
+#!/bin/bash
+
+print_usage() {
+	cat <<EOF
+usage: $0 scope|type
+
+check scope pass using:
+$0 scope
+check type checking pass using:
+	$0 type
+EOF
+	exit 1
+}
+
+[ -z "$1" ] && print_usage
+
+case $1 in
+	"scope")
+		flag='-dump-symbol-table'
+		files=../examples/scope*.c
+		;;
+	"type")
+		flag='-dump-type-table'
+		files=../examples/type*.c
+		;;
+	"*")
+		print_usage
+		;;
+esac
+
+for file in $files; do
+	diff <(./microcc $flag --color=0 $file 2>&1 | sort ) <(cat $file.out.expected | sort)
+	([ "$?" -ne 0 ] && echo "$file: TEST FAIL") || echo "$file: TEST SUCCESS"
+done
+
