@@ -19,6 +19,10 @@ sema::TypeCheckingPass::TypeCheckingPass(llvm::LLVMContext &ctx)
     T_string = sema::Util::parseLLVMType(ctx, "string");
 }
 
+bool sema::TypeCheckingPass::isNumeric(llvm::Type* x) {
+    return x == T_float || x == T_int;
+}
+
 llvm::Type *sema::TypeCheckingPass::visitFuncDecl(ast::FuncDecl &node) {
 
     for (const auto &arg : node.arguments)
@@ -57,11 +61,17 @@ llvm::Type *sema::TypeCheckingPass::visitReturnStmt(ast::ReturnStmt &node) {
 }
 
 llvm::Type *sema::TypeCheckingPass::visitVarDecl(ast::VarDecl &node) {
-    // ASSIGNMENT: Implement type checking for variable declarations here.
-    if (node.init)
-        visit(*node.init);
+    auto var_type = sema::Util::parseLLVMType(ctx, node.type);
 
-    return type_table[&node] = nullptr;
+    if (node.init) {
+        auto init_type = visit(*node.init);
+
+        // initializer must match type of variable
+        if (var_type != init_type)
+            throw SemanticException("Type of initializer does not match type of variable", node.name.begin);
+    }
+
+    return type_table[&node] = var_type;
 }
 
 llvm::Type *sema::TypeCheckingPass::visitArrayDecl(ast::ArrayDecl &node) {
@@ -75,18 +85,36 @@ llvm::Type *sema::TypeCheckingPass::visitArrayDecl(ast::ArrayDecl &node) {
 }
 
 llvm::Type *sema::TypeCheckingPass::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
-    // ASSIGNMENT: Implement type checking for binary operators here.
-    visit(*node.lhs);
-    visit(*node.rhs);
+    auto lhs_type = visit(*node.lhs);
+    auto rhs_type = visit(*node.rhs);
 
-    return type_table[&node] = nullptr;
+    if( lhs_type != rhs_type 
+        || (node.op.type != TokenType::EQUALS && !isNumeric(lhs_type))) // if operator is not '=' both operands must be numeric!
+        throw SemanticException(
+            fmt::format("Invalid operand types to binary operator '{}'", node.op.lexeme), node.op.begin);
+    
+    // binary operators return integers
+    if (   node.op.type == TokenType::EQUALS_EQUALS
+        || node.op.type == TokenType::BANG_EQUALS
+        || node.op.type == TokenType::LESS_THAN
+        || node.op.type == TokenType::LESS_THAN_EQUALS
+        || node.op.type == TokenType::GREATER_THAN
+        || node.op.type == TokenType::GREATER_THAN_EQUALS) {
+
+        return type_table[&node] = T_int;
+    }
+
+    return type_table[&node] = lhs_type;
 }
 
 llvm::Type *sema::TypeCheckingPass::visitUnaryOpExpr(ast::UnaryOpExpr &node) {
-    // ASSIGNMENT: Implement type checking for unary operators here.
-    visit(*node.operand);
+    auto type = visit(*node.operand);
 
-    return type_table[&node] = nullptr;
+    if(!isNumeric(type))
+        throw SemanticException(
+            fmt::format("Invalid operand type to unary operator '{}'", node.op.lexeme), node.op.begin);
+
+    return type_table[&node] = type;
 }
 
 llvm::Type *sema::TypeCheckingPass::visitIntLiteral(ast::IntLiteral &node) {
@@ -103,15 +131,14 @@ sema::TypeCheckingPass::visitStringLiteral(ast::StringLiteral &node) {
 }
 
 llvm::Type *sema::TypeCheckingPass::visitVarRefExpr(ast::VarRefExpr &node) {
-    // ASSIGNMENT: Implement type checking for variable references here.
-    return type_table[&node] = nullptr;
+    return type_table[&node] = type_table[symbol_table[&node]];
 }
 
 llvm::Type *sema::TypeCheckingPass::visitArrayRefExpr(ast::ArrayRefExpr &node) {
-    // ASSIGNMENT: Implement type checking for array references here.
-    visit(*node.index);
+    if(visit(*node.index) != T_int)
+        throw SemanticException("Array subscript must be an integer", node.name.begin);
 
-    return type_table[&node] = nullptr;
+    return type_table[&node] = ((llvm::ArrayType*) type_table[symbol_table[&node]])->getElementType();
 }
 
 llvm::Type *sema::TypeCheckingPass::visitFuncCallExpr(ast::FuncCallExpr &node) {

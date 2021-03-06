@@ -65,6 +65,7 @@ class TypeCheckingPass : public ast::Visitor<TypeCheckingPass, llvm::Type *> {
     llvm::Type *T_string; // LLVM's i8* type
 
     // ASSIGNMENT: Add any helper functions or members here.
+    bool isNumeric(llvm::Type *x);
 };
 } // namespace sema
 
