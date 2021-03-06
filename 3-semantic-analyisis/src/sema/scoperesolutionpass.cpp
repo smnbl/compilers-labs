@@ -62,23 +62,30 @@ void sema::ScopeResolutionPass::visitFuncDecl(ast::FuncDecl &node) {
     visit(*node.body);
 
     // Pop function scope (arguments)
+    // this will open a new scope for the body (can shadow function arguments)
     popScope();
 }
 
 void sema::ScopeResolutionPass::visitIfStmt(ast::IfStmt &node) {
-    // ASSIGNMENT: Implement scope resolution.
-
     visit(*node.condition);
+
+    pushScope();
     visit(*node.if_clause);
-    if (node.else_clause)
+    popScope();
+
+    if (node.else_clause) {
+        pushScope();
         visit(*node.else_clause);
+        popScope();
+    }
 }
 
 void sema::ScopeResolutionPass::visitWhileStmt(ast::WhileStmt &node) {
-    // ASSIGNMENT: Implement scope resolution.
-
     visit(*node.condition);
+
+    pushScope();
     visit(*node.body);
+    popScope();
 }
 
 void sema::ScopeResolutionPass::visitVarDecl(ast::VarDecl &node) {
