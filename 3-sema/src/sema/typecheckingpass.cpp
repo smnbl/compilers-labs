@@ -35,7 +35,11 @@ llvm::Type *sema::TypeCheckingPass::visitFuncDecl(ast::FuncDecl &node) {
 
 llvm::Type *sema::TypeCheckingPass::visitIfStmt(ast::IfStmt &node) {
     // ASSIGNMENT: Implement type checking for if statements here.
-    visit(*node.condition);
+    auto iftype = visit(*node.condition);
+    if(iftype!=T_int){
+        throw SemanticException(
+            fmt::format("Condition for an if statement must be an integer"));
+    }
     visit(*node.if_clause);
     if (node.else_clause)
         visit(*node.else_clause);
@@ -45,7 +49,11 @@ llvm::Type *sema::TypeCheckingPass::visitIfStmt(ast::IfStmt &node) {
 
 llvm::Type *sema::TypeCheckingPass::visitWhileStmt(ast::WhileStmt &node) {
     // ASSIGNMENT: Implement type checking for while statements here.
-    visit(*node.condition);
+    auto iftype = visit(*node.condition);
+    if(iftype!=T_int){
+        throw SemanticException(
+            fmt::format("Condition for a while statement must be an integer"));
+    }
     visit(*node.body);
 
     return nullptr; // Statements do not have a type.
@@ -53,9 +61,17 @@ llvm::Type *sema::TypeCheckingPass::visitWhileStmt(ast::WhileStmt &node) {
 
 llvm::Type *sema::TypeCheckingPass::visitReturnStmt(ast::ReturnStmt &node) {
     // ASSIGNMENT: Implement type checking for return statements here.
-
-    if (node.value)
-        visit(*node.value);
+    llvm::FunctionType *funcTy ; //only need a pointer to the function and that should be it
+    if (node.value ){
+        auto rettype = visit(*node.value);
+        
+        if (funcTy->getReturnType()!= rettype){
+            throw SemanticException("Type of return statement does not match function return type");
+        }
+    }else if(!(funcTy->getReturnType() == T_void)){
+        throw SemanticException("Type of return statement does not match function return type");
+    
+    }
 
     return nullptr; // Statements do not have a type.
 }
