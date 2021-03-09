@@ -1,10 +1,11 @@
-int foo()
+string hello()
 {
-    return 2;
+    int x = 1 + 3 + "11";
+    return "df";
 }
 
 // This is also OK:
-// void foo()
-// {
-//     return;
-// }
+void foo()
+{
+    return;
+}

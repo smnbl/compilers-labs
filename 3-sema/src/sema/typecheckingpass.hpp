@@ -66,6 +66,9 @@ class TypeCheckingPass : public ast::Visitor<TypeCheckingPass, llvm::Type *> {
 
     // ASSIGNMENT: Add any helper functions or members here.
     bool isNumeric(llvm::Type *x);
+
+    // current function type (for type checking return statements)
+    llvm::Type *m_function_type;
 };
 } // namespace sema
 

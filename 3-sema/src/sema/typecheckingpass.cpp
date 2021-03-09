@@ -27,8 +27,13 @@ llvm::Type *sema::TypeCheckingPass::visitFuncDecl(ast::FuncDecl &node) {
 
     for (const auto &arg : node.arguments)
         visit(*arg);
+
+    llvm::Type *old = m_function_type;
+
+    m_function_type = function_table[node.name.lexeme];
     visit(*node.body);
 
+    m_function_type = old;
 
     return nullptr; // No need to return anything here.
 }
@@ -61,7 +66,7 @@ llvm::Type *sema::TypeCheckingPass::visitWhileStmt(ast::WhileStmt &node) {
 
 llvm::Type *sema::TypeCheckingPass::visitReturnStmt(ast::ReturnStmt &node) {
     // ASSIGNMENT: Implement type checking for return statements here.
-    llvm::FunctionType *funcTy ; //only need a pointer to the function and that should be it
+    llvm::FunctionType *funcTy = (llvm::FunctionType*) m_function_type; //only need a pointer to the function and that should be it
     if (node.value ){
         auto rettype = visit(*node.value);
         
