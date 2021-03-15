@@ -1,0 +1,13 @@
+{
+	"name": "Compilers Lab 4",
+	"image": "thomasfaingnaert/compilers:pract4",
+	"runArgs": [
+		"--cap-add=SYS_PTRACE",
+		"--security-opt",
+		"seccomp=unconfined"
+	],
+	"extensions": [
+		"ms-vscode.cpptools",
+		"ms-vscode.cmake-tools"
+	]
+}
