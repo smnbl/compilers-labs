@@ -28,14 +28,16 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
     }
 
     module << Instruction{"pushq", {"%rbp"}, " weird"};
+
+    // store stack pointer in base pointer
     module << Instruction{"movq",{"%rsp","%rbp"}};
-    std::string val1 = fmt::format("${}", -16);
-    module << Instruction{"andq",{val1,"%rsp"},"align stack again w 16 B"};
 
-    
+    // align stack pointer  (assume no parameters for now !)
+    // TODO add padding based on amount of parameters
+    module << Instruction{"subq",{"$8", "%rsp"}};
+    padded = true;
+
     // ASSIGNMENT: Implement function parameters here.
-
-
     visit(*node.body);
 
     // Create a basic block for the function exit.
@@ -103,14 +105,28 @@ void codegen_x64::CodeGeneratorX64::visitExprStmt(ast::ExprStmt &node) {
 }
 
 void codegen_x64::CodeGeneratorX64::visitVarDecl(ast::VarDecl &node) {
-    std::string val = fmt::format("${}", 8);
-    module << Instruction{"subq",{val,"%rsp"}, "make space for variable"};
-    std::string val1 = fmt::format("${}", -16);
-    module << Instruction{"andq",{val1,"%rsp"},"align stack again w 16 B"};
-    //variable_declarations.insert({node.kind,16});
-
-    if (node.init)
+    // if init, initialize with value
+    if (node.init) {
+        if (padded)
+            module << Instruction{"addq", {"$8", "%rsp"}, "fill up padding space"};
         visit(*node.init);
+    } else {
+        // fill up padding space with variable if padded,
+        // otherwise allocate space
+        if (!padded)
+            module << Instruction{"subq",{"$8","%rsp"}, "make space for variable"};
+    }
+
+    // align bytes, add padding if was not padded
+    if(!padded) {
+        module << Instruction{"subq",{"$8","%rsp"},"align stack again w 16 B"};
+        padded = true;
+    } else {
+        padded = false;
+    }
+
+    // put location of the variable relative to the base pointer to the variable declarations member variable
+    variable_declarations.insert({&node , -(1+ variable_declarations.size())*8});
 }
 
 void codegen_x64::CodeGeneratorX64::visitArrayDecl(ast::ArrayDecl &node) {
@@ -241,8 +257,8 @@ void codegen_x64::CodeGeneratorX64::visitStringLiteral(
 
 void codegen_x64::CodeGeneratorX64::visitVarRefExpr(ast::VarRefExpr &node) {
     // ASSIGNMENT: Implement variable references here.
-    std::string address  = variable(&node);
-    module << Instruction{"load", {address, "%r13"}, "load var in r13"};
+    std::string address  = variable(symbol_table[&node]);
+    module << Instruction{"movq", {address, "%r13"}, "load var in r13"};
     module << Instruction{"pushq",{"%r13"},"push var on stack"};
 }
 

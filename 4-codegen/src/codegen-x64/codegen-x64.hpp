@@ -77,6 +77,9 @@ class CodeGeneratorX64 : public ast::Visitor<CodeGeneratorX64> {
     void handleAssignment(ast::BinaryOpExpr &node);
 
     // ASSIGNMENT: Add any helper functions you use here (if any).
+    
+    // 8 bytes on top of the stack were added as padding
+    bool padded;
 };
 } // namespace codegen_x64
 
