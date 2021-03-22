@@ -129,13 +129,13 @@ void codegen_x64::CodeGeneratorX64::visitVarDecl(ast::VarDecl &node) {
     // if init, initialize with value
     if (node.init) {
         if (aligned)
-            module << Instruction{"addq", {"$8", "%rsp"}, "fill up padding space"};
+            module << Instruction{"addq", {"$8", "%rsp"}, "fill up padding space with vardecl"};
         visit(*node.init);
     } else {
         // fill up padding space with variable if aligned,
         // otherwise allocate space
         if (!aligned)
-            module << Instruction{"subq",{"$8","%rsp"}, "make space for variable"};
+            module << Instruction{"subq",{"$8","%rsp"}, "make space for vardecl on the stack"};
     }
 
     // align bytes, add padding if was not aligned
