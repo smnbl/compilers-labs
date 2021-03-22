@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <map>
 
 #define DEBUG_TYPE "optimiser-x64"
 
@@ -56,6 +57,7 @@ bool codegen_x64::OptimiserX64::optimiseNopElimination(Module &mod) {
         auto it = std::remove_if(
             std::begin(insns), std::end(insns),
             [](const Instruction &ins) { return ins.opcode == "nop"; });
+            
 
         // Update statistic
         NumNopsEliminated += std::distance(it, std::end(insns));
@@ -73,19 +75,105 @@ bool codegen_x64::OptimiserX64::optimiseNopElimination(Module &mod) {
 bool codegen_x64::OptimiserX64::optimise1(Module &mod) {
     // ASSIGNMENT: Implement your first peephole optimisation here.
     // Return true only if you have changed the assembly.
-    return false;
+    // First optimization: push and pop changes to move
+    bool changed = false;
+    for (auto &bbl : mod.blocks) {
+       for (auto it = std::begin(bbl.instructions);
+            it != std::end(bbl.instructions) &&
+            std::next(it) != std::end(bbl.instructions);
+            ++it) {
+            auto &cur_ins = *it;
+            auto &next_ins = *std::next(it);
+            auto &next_next_ins = *std::next(std::next(it));
+            if (cur_ins.opcode == "pushq" && next_ins.opcode == "popq"){
+                auto prev_ins = std::prev(it);
+                auto next_next_ins = std::next(std::next(it));
+                changed = true;
+                next_ins.opcode = "movq" ;
+                next_ins.operands = {cur_ins.operands[0], next_ins.operands[0]};
+                next_ins.comment = "optimization1";
+                makeNop(cur_ins);
+                while (prev_ins->opcode == "pushq" && next_next_ins->opcode == "popq" && prev_ins != std::begin(bbl.instructions) &&  next_next_ins != std::end(bbl.instructions)){
+                    next_next_ins->opcode = "movq" ;
+                    next_next_ins->operands = {prev_ins->operands[0], next_next_ins->operands[0]};
+                    next_next_ins->comment = "optimization1 v2";
+                    makeNop(*prev_ins);
+                    prev_ins = std::prev(prev_ins);
+                    next_next_ins = std::next(next_next_ins);
+                }
+
+            }
+            
+        }
+    }
+    return changed;
 }
 
 bool codegen_x64::OptimiserX64::optimise2(Module &mod) {
     // ASSIGNMENT: Implement your second peephole optimisation here.
     // Return true only if you have changed the assembly.
-    return false;
+    bool changed = false;
+
+    
+    for (auto &bbl : mod.blocks) {
+        std::map<std::string, int> dict; //registers saved with their values
+        int i = 0;
+        for (auto it = std::begin(bbl.instructions);
+            it != std::end(bbl.instructions) ;
+            ++it) {
+            auto &cur_ins = *it;
+            if (cur_ins.opcode == "movq"){
+                std::string firstop = cur_ins.operands[0];
+                std::string secondop = cur_ins.operands[1];
+                if (firstop.at(0) == '$' && secondop.at(0) == '%'){
+                    dict[secondop] = i;
+                }
+            }
+            else if(cur_ins.opcode == "addq" || cur_ins.opcode == "subq"){ //check if in the map
+                if (dict.find(cur_ins.operands[0])!=dict.end()){
+                    int nr = dict.find(cur_ins.operands[0])->second;
+                    auto oldinstr = bbl.instructions[nr];
+                    cur_ins.operands[0]= oldinstr.operands[0];
+                    makeNop(oldinstr);
+                    changed = true;
+                }//invalidate second operand
+                dict.erase(cur_ins.operands[1]);
+            }
+            else {
+                int oplen = cur_ins.operands.size();
+                if (oplen>0){//invalidate last operand
+                    dict.erase(cur_ins.operands[oplen-1]);
+                }
+            }
+            i++;
+
+            
+            
+        }
+    }
+    return changed;
 }
 
 bool codegen_x64::OptimiserX64::optimise3(Module &mod) {
     // ASSIGNMENT: Implement your third peephole optimisation here.
     // Return true only if you have changed the assembly.
-    return false;
+    bool changed = false;
+    for (auto &bbl : mod.blocks) {
+       for (auto it = std::begin(bbl.instructions);
+            it != std::end(bbl.instructions) &&
+            std::next(it) != std::end(bbl.instructions);
+            ++it) {
+            auto &cur_ins = *it;
+            auto &next_ins = *std::next(it);
+            if (cur_ins.operands.size()>=2){
+                if (cur_ins.opcode == "movq" && cur_ins.operands[0]==cur_ins.operands[1]){
+                    makeNop(cur_ins);
+                    changed = true;
+                }
+            }
+        }
+    }
+    return changed;
 }
 
 void codegen_x64::OptimiserX64::makeNop(Instruction &ins) {

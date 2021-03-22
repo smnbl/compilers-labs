@@ -71,7 +71,7 @@ class CodeGeneratorX64 : public ast::Visitor<CodeGeneratorX64> {
     std::string variable(ast::Base *var);
 
     // Returns the location where the caller places the value for parameter i.
-    std::string parameter(std::size_t arg);
+    std::string parameter(ast::Expr arg);
 
     // Handle assignment AST nodes.
     void handleAssignment(ast::BinaryOpExpr &node);

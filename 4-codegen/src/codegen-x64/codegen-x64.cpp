@@ -20,6 +20,8 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
 
     // Store the name of the exit basic block so we can refer to it in
     // ReturnStmt.
+    
+    
     function_exit = fmt::format(".{}.exit", name);
 
     // ASSIGNMENT: Implement the function prologue here.
@@ -27,7 +29,7 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
         module << Instruction{"pushq",{abi_callee_saved_regs[5-i]},"push callee save regs"};
     }
 
-    module << Instruction{"pushq", {"%rbp"}, " weird"};
+    module << Instruction{"pushq", {"%rbp"}, " save base pointer"};
 
     // store stack pointer in base pointer
     module << Instruction{"movq",{"%rsp","%rbp"}};
@@ -38,6 +40,19 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
     padded = true;
 
     // ASSIGNMENT: Implement function parameters here.
+    int k = 0;
+
+    for (std::shared_ptr<ast::VarDecl> i : node.arguments){
+        //ast::Expr s = static_cast<ast::Expr >(*i);
+        if (k<6){
+           //module << Instruction{"movq",{parameter(s), abi_param_regs[k]}, "move parameters into paramregs"};
+        }
+        else{
+            //module << Instruction{"pushq",{parameter(s)},"push remaining pars on stack"};
+        }
+        k++;
+        
+    }
     visit(*node.body);
 
     // Create a basic block for the function exit.
@@ -45,11 +60,11 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
                          fmt::format("Exit point of function '{}'", name)};
 
     // ASSIGNMENT: Implement the function epilogue here. 
-    module << Instruction{"movq", {"%rbp","%rsp"}, " weird"};
-    module << Instruction{"popq",{"%rbp"}};
+    module << Instruction{"movq", {"%rbp","%rsp"}, " restore base pointe"};
+    module << Instruction{"popq",{"%rbp"}, "restore base pointer"};
 
     for (int i=0; i<6; i++){
-        module << Instruction{"popq",{abi_callee_saved_regs[i]},"push callee save regs"};
+        module << Instruction{"popq",{abi_callee_saved_regs[i]},"pop callee save regs"};
     }
     module << Instruction{"retq", {}, "Return to the caller [FuncDecl]"};
 }
@@ -57,30 +72,35 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
 void codegen_x64::CodeGeneratorX64::visitIfStmt(ast::IfStmt &node) {
     // ASSIGNMENT: Implement if and if-else statements here.
     visit(*node.condition);
-
+    auto unique_label = label("else");
     module << Instruction{"popq", {"%r12"}, "pop 1 or 0"};
     std::string val1 = fmt::format("${}", 1);
     module << Instruction{"cmpq", {val1,"%r12"},"check statement"};
-    module << Instruction{"jne",{"else"},"jmp to else claus if not equal"};
+    module << Instruction{"jne",{unique_label},"jmp to else claus if not equal"}; // should not be hard coded as l1 
     visit(*node.if_clause);
-    auto unique_label = label(".L0else");
+    auto iftakenlabel = label("iftaken");
+    
+    module << Instruction{"jmp",{iftakenlabel},"jmp to after else claus if equal"}; // should not be hard coded as l0
     module << BasicBlock{unique_label,"make new bb"};
     if (node.else_clause)
         visit(*node.else_clause);
+    module << BasicBlock{iftakenlabel,"make new bb for if taken"};
+    
 }
 
 void codegen_x64::CodeGeneratorX64::visitWhileStmt(ast::WhileStmt &node) {
     // ASSIGNMENT: Implement while statements here.
     auto whilelbl = label("while");
+    auto endlbl = label("endwhile");
     module << BasicBlock{whilelbl,"new label for while cond"};
     visit(*node.condition);
     module << Instruction{"popq", {"%rax"}, "pop 1 or 0"};
     std::string val1 = fmt::format("${}", 1);
-    module << Instruction{"cmpq", {"%rax",val1},"check statement"};
-    module << Instruction{"jne",{"endwhile"},"jmp to endwhile clause if not equal"};
+    module << Instruction{"cmpq", {val1,"%rax"},"check statement"};
+    module << Instruction{"jne",{endlbl},"jmp to endwhile clause if not equal"};
     visit(*node.body);
-    module << Instruction{"jmp", {"while"}};
-    auto endlbl = label("endwhile");
+    module << Instruction{"jmp", {whilelbl}};
+    
     module << BasicBlock{endlbl,"new label for ending while lp"};
 }
 
@@ -149,9 +169,14 @@ void codegen_x64::CodeGeneratorX64::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
     std::string val = fmt::format("${}", 0);
     std::string val1 = fmt::format("${}", 1);
     
-
-    module << Instruction{"popq", {"%rax"}, "pop rhs first"};
-    module << Instruction{"popq", {"%r15"}, "pop lhs second"};
+    if (node.op.type == TokenType::SLASH || node.op.type == TokenType::PERCENT ){
+        module << Instruction{"popq", {"%r15"}, "pop rhs first"};
+        module << Instruction{"popq", {"%rax"}, "pop lhs second"};
+    }
+    else{
+        module << Instruction{"popq", {"%rax"}, "pop rhs first"};
+        module << Instruction{"popq", {"%r15"}, "pop lhs second"};
+    }
     switch (node.op.type){
         case (TokenType::PLUS) : //ok
             module << Instruction{"addq", {"%r15","%rax"}, "take sum"};
@@ -165,12 +190,14 @@ void codegen_x64::CodeGeneratorX64::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
             module << Instruction{"imulq", {"%r15"}, "multiply binary"};
             module << Instruction{"pushq",{"%rax"}, "push sol on stack of binary op"};
             break;
-        case (TokenType::SLASH) : //not okay
-            module << Instruction{"idiv", {"%r15"}, "divide"};
+        case (TokenType::SLASH) : //okay
+            module << Instruction{"movq", {val, "%rdx"}, "move 0 top of rax "};
+            module << Instruction{"idivq", {"%r15"}, "divide"};
             module << Instruction{"pushq",{"%rax"}, "push sol on stack of binary op"};
             break;
-        case (TokenType::PERCENT) : //not okay
-            module << Instruction{"idiv", {"%r15"}, "first division"};
+        case (TokenType::PERCENT) : // okay
+            module << Instruction{"movq", {val, "%rdx"}, "move 0 to top of rax "};
+            module << Instruction{"idivq", {"%r15"}, "first division"};
             module << Instruction{"pushq",{"%rdx"}, "push sol on stack of binary op"};
             break;
         case (TokenType::BANG_EQUALS) : //ok
@@ -308,10 +335,13 @@ std::string codegen_x64::CodeGeneratorX64::variable(ast::Base *var) {
     return fmt::format("{}(%rbp)", it->second);
 }
 
-std::string codegen_x64::CodeGeneratorX64::parameter(std::size_t arg) {
+std::string codegen_x64::CodeGeneratorX64::parameter(ast::Expr arg) {
     // ASSIGNMENT: Return the location where the caller places the value for
     // argument 'arg' (0-indexed).
-    return "$0";
+
+    ast::VarRefExpr &s = static_cast<ast::VarRefExpr &>(arg);
+    ast::Base *spot = symbol_table[&s];
+    return variable(spot);
 }
 
 void codegen_x64::CodeGeneratorX64::handleAssignment(ast::BinaryOpExpr &node) {
