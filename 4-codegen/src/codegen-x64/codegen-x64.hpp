@@ -71,15 +71,15 @@ class CodeGeneratorX64 : public ast::Visitor<CodeGeneratorX64> {
     std::string variable(ast::Base *var);
 
     // Returns the location where the caller places the value for parameter i.
-    std::string parameter(ast::Expr arg);
+    std::string parameter(std::size_t arg);
 
     // Handle assignment AST nodes.
     void handleAssignment(ast::BinaryOpExpr &node);
 
     // ASSIGNMENT: Add any helper functions you use here (if any).
     
-    // 8 bytes on top of the stack were added as padding
-    bool padded;
+    // stack is aligned at the moment, if not padding will be added at the end
+    bool aligned;
 };
 } // namespace codegen_x64
 

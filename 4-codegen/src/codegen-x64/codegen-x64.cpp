@@ -34,25 +34,26 @@ void codegen_x64::CodeGeneratorX64::visitFuncDecl(ast::FuncDecl &node) {
     // store stack pointer in base pointer
     module << Instruction{"movq",{"%rsp","%rbp"}};
 
-    // align stack pointer  (assume no parameters for now !)
-    // TODO add padding based on amount of parameters
-    module << Instruction{"subq",{"$8", "%rsp"}};
-    padded = true;
+    // stack is not aligned at the moment
+    aligned = false;
 
     // ASSIGNMENT: Implement function parameters here.
-    int k = 0;
+    for (int i = 0; i < node.arguments.size(); i++) {
+        module << Instruction{"pushq", {parameter(i)}, fmt::format("push argument {} on the stack", i)};
+        variable_declarations.insert({&(*node.arguments[i]), -(1+ variable_declarations.size())*8});
 
-    for (std::shared_ptr<ast::VarDecl> i : node.arguments){
-        //ast::Expr s = static_cast<ast::Expr >(*i);
-        if (k<6){
-           //module << Instruction{"movq",{parameter(s), abi_param_regs[k]}, "move parameters into paramregs"};
-        }
-        else{
-            //module << Instruction{"pushq",{parameter(s)},"push remaining pars on stack"};
-        }
-        k++;
-        
+        // flip aligned
+        aligned = !aligned;
     }
+
+    // align bytes, add padding if was not aligned
+    if(!aligned) {
+        module << Instruction{"subq",{"$8","%rsp"},"add padding to align stack again by 16 B"};
+        aligned = true;
+    } else {
+        aligned = false;
+    }
+
     visit(*node.body);
 
     // Create a basic block for the function exit.
@@ -127,22 +128,22 @@ void codegen_x64::CodeGeneratorX64::visitExprStmt(ast::ExprStmt &node) {
 void codegen_x64::CodeGeneratorX64::visitVarDecl(ast::VarDecl &node) {
     // if init, initialize with value
     if (node.init) {
-        if (padded)
+        if (aligned)
             module << Instruction{"addq", {"$8", "%rsp"}, "fill up padding space"};
         visit(*node.init);
     } else {
-        // fill up padding space with variable if padded,
+        // fill up padding space with variable if aligned,
         // otherwise allocate space
-        if (!padded)
+        if (!aligned)
             module << Instruction{"subq",{"$8","%rsp"}, "make space for variable"};
     }
 
-    // align bytes, add padding if was not padded
-    if(!padded) {
-        module << Instruction{"subq",{"$8","%rsp"},"align stack again w 16 B"};
-        padded = true;
+    // align bytes, add padding if was not aligned
+    if(!aligned) {
+        module << Instruction{"subq",{"$8","%rsp"},"add padding to align stack again by 16 B"};
+        aligned = true;
     } else {
-        padded = false;
+        aligned = false;
     }
 
     // put location of the variable relative to the base pointer to the variable declarations member variable
@@ -298,28 +299,26 @@ void codegen_x64::CodeGeneratorX64::visitArrayRefExpr(ast::ArrayRefExpr &node) {
 void codegen_x64::CodeGeneratorX64::visitFuncCallExpr(ast::FuncCallExpr &node) {
     // ASSIGNMENT: Implement function calls here.
     std::string name = fmt::format("{}", node.name.lexeme);
-    int i = 0;
 
-    for (const auto &arg : node.arguments){
-        //if arg.type
-        visit(*arg);
-        if(i<6){
-            module << Instruction{"popq",{abi_param_regs[i]}};
+
+    for (int i = node.arguments.size() - 1; i >= 0; i--) {
+        // push value on stack
+        visit(*node.arguments[i]);
+        if (i >= 6) {
+            // keep on stack
+        } else {
+            // put in register
+            module << Instruction{"popq", {abi_param_regs[i]}, "put argument into register (i<6)"};
         }
-        i+=1;
     }
 
     module << Instruction{"call",{name},"call the function after pushing all args"};
-    
 
-    while (i>6){
+    for (int i = node.arguments.size() - 1; i >=6; i--)
         module << Instruction{"popq",{"%r12"},"call the function after pushing all args"};
-        i=i-1;
-        
-    }
+
     //if it has return value
     module << Instruction{"pushq",{abi_return_reg}, "put return of function on stack"};
-    
 }
 
 std::string codegen_x64::CodeGeneratorX64::label(const std::string &suffix) {
@@ -335,13 +334,17 @@ std::string codegen_x64::CodeGeneratorX64::variable(ast::Base *var) {
     return fmt::format("{}(%rbp)", it->second);
 }
 
-std::string codegen_x64::CodeGeneratorX64::parameter(ast::Expr arg) {
+std::string codegen_x64::CodeGeneratorX64::parameter(std::size_t arg) {
     // ASSIGNMENT: Return the location where the caller places the value for
     // argument 'arg' (0-indexed).
+    
+    // 6 first arguments are passed through registers
+    if (arg < 6)
+        return abi_param_regs[arg];
 
-    ast::VarRefExpr &s = static_cast<ast::VarRefExpr &>(arg);
-    ast::Base *spot = symbol_table[&s];
-    return variable(spot);
+    // following arguments are passed on the stack
+    // remember to add return addr + callee saved registers + base pointer (1 + 6 + 1)
+    return fmt::format("{}(%rbp)", 8*(arg - 6 + 1 + abi_callee_saved_regs.size() + 1));
 }
 
 void codegen_x64::CodeGeneratorX64::handleAssignment(ast::BinaryOpExpr &node) {
