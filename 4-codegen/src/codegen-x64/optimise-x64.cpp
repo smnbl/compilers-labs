@@ -80,26 +80,30 @@ bool codegen_x64::OptimiserX64::optimise1(Module &mod) {
     for (auto &bbl : mod.blocks) {
        for (auto it = std::begin(bbl.instructions);
             it != std::end(bbl.instructions) &&
-            std::next(it) != std::end(bbl.instructions);
+            std::next(it) != std::end(bbl.instructions) &&
+            std::next(std::next(it)) != std::end(bbl.instructions);
             ++it) {
             auto &cur_ins = *it;
             auto &next_ins = *std::next(it);
-            auto &next_next_ins = *std::next(std::next(it));
+            
             if (cur_ins.opcode == "pushq" && next_ins.opcode == "popq"){
-                auto prev_ins = std::prev(it);
+                
                 auto next_next_ins = std::next(std::next(it));
                 changed = true;
                 next_ins.opcode = "movq" ;
                 next_ins.operands = {cur_ins.operands[0], next_ins.operands[0]};
-                next_ins.comment = "optimization1";
+                next_ins.comment = "opt1";
                 makeNop(cur_ins);
-                while (prev_ins->opcode == "pushq" && next_next_ins->opcode == "popq" && prev_ins != std::begin(bbl.instructions) &&  next_next_ins != std::end(bbl.instructions)){
-                    next_next_ins->opcode = "movq" ;
-                    next_next_ins->operands = {prev_ins->operands[0], next_next_ins->operands[0]};
-                    next_next_ins->comment = "optimization1 v2";
-                    makeNop(*prev_ins);
-                    prev_ins = std::prev(prev_ins);
-                    next_next_ins = std::next(next_next_ins);
+                if (it != std::begin(bbl.instructions)){
+                    auto prev_ins = std::prev(it);
+                    while (prev_ins->opcode == "pushq" && next_next_ins->opcode == "popq" && prev_ins != std::begin(bbl.instructions) &&  next_next_ins != std::end(bbl.instructions)){
+                        next_next_ins->opcode = "movq" ;
+                        next_next_ins->operands = {prev_ins->operands[0], next_next_ins->operands[0]};
+                        next_next_ins->comment = "opt1";
+                        makeNop(*prev_ins);
+                        prev_ins = std::prev(prev_ins);
+                        next_next_ins = std::next(next_next_ins);
+                    }
                 }
 
             }
@@ -139,7 +143,7 @@ bool codegen_x64::OptimiserX64::optimise2(Module &mod) {
                 }//invalidate second operand
                 dict.erase(cur_ins.operands[1]);
             }
-            else {
+            else{
                 int oplen = cur_ins.operands.size();
                 if (oplen>0){//invalidate last operand
                     dict.erase(cur_ins.operands[oplen-1]);
