@@ -75,6 +75,8 @@ class CodeGeneratorLLVM
     bool isCurrentBasicBlockTerminated();
 
     // ASSIGNMENT: Add any helper functions or member variables (if any) here.
+    llvm::Value* generateCompareInt(llvm::CmpInst::Predicate, llvm::Value* lhs, llvm::Value* rhs);
+    llvm::Value* generateCompareFloat(llvm::CmpInst::Predicate, llvm::Value* lhs, llvm::Value* rhs);
 };
 } // namespace codegen_llvm
 

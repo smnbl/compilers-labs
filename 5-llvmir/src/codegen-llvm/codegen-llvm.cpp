@@ -121,7 +121,97 @@ codegen_llvm::CodeGeneratorLLVM::visitArrayDecl(ast::ArrayDecl &node) {
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
     // ASSIGNMENT: Implement binary operators here.
-    throw CodegenException("ASSIGNMENT: binary operators are not implemented!");
+    llvm::Value *lhs = visit(*node.lhs);
+    llvm::Value *rhs = visit(*node.rhs);
+
+    switch (node.op.type) {
+        case (TokenType::CARET):
+            // TODO implement exponentiation using compiler intrinsic
+            throw CodegenException("not implemented");
+            break;
+        case (TokenType::STAR): // ok
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return builder.CreateMul(lhs, rhs);
+            else
+                return builder.CreateFMul(lhs, rhs);
+            break;
+        case (TokenType::SLASH): // ok
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return builder.CreateSDiv(lhs, rhs);
+            else
+                return builder.CreateFDiv(lhs, rhs);
+            break;
+        case (TokenType::PERCENT):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return builder.CreateSRem(lhs, rhs); // TODO juiste versie?
+            else
+                return builder.CreateFRem(lhs, rhs);
+            break;
+        case (TokenType::PLUS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return builder.CreateAdd(lhs, rhs);
+            else
+                return builder.CreateFAdd(lhs, rhs);
+            break;
+        case (TokenType::MINUS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return builder.CreateSub(lhs, rhs);
+            else
+                return builder.CreateFRem(lhs, rhs);
+            break;
+        case (TokenType::LESS_THAN):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SLT, lhs, rhs); 
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OLT, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        case (TokenType::LESS_THAN_EQUALS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral) {
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SLE, lhs, rhs);
+            }
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OLE, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        case (TokenType::GREATER_THAN):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SGT, lhs, rhs);
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OGT, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        case (TokenType::GREATER_THAN_EQUALS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SGE, lhs, rhs);
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OGE, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        case (TokenType::EQUALS_EQUALS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_EQ, lhs, rhs);
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OEQ, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        case (TokenType::BANG_EQUALS):
+            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                return generateCompareInt(llvm::CmpInst::Predicate::ICMP_NE, lhs, rhs);
+            else
+                return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_ONE, lhs, rhs); // clang seems to use unordered comparisons by default?
+            break;
+        default:
+            throw CodegenException("unsupported operand!");
+    }
+    return nullptr;
+}
+
+llvm::Value *
+codegen_llvm::CodeGeneratorLLVM::generateCompareInt(llvm::CmpInst::Predicate predicate, llvm::Value* lhs, llvm::Value* rhs) {
+    auto cmp = builder.CreateICmp(predicate, lhs, rhs, "cmp");
+    return builder.CreateZExt(cmp, T_int);
+}
+
+llvm::Value *
+codegen_llvm::CodeGeneratorLLVM::generateCompareFloat(llvm::CmpInst::Predicate predicate, llvm::Value* lhs, llvm::Value* rhs) {
+    auto cmp = builder.CreateFCmp(predicate, lhs, rhs, "cmp");
+    return builder.CreateZExt(cmp, T_int);
 }
 
 llvm::Value *
@@ -161,7 +251,13 @@ codegen_llvm::CodeGeneratorLLVM::visitArrayRefExpr(ast::ArrayRefExpr &node) {
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitFuncCallExpr(ast::FuncCallExpr &node) {
     // ASSIGNMENT: Implement function calls here.
-    throw CodegenException("ASSIGNMENT: function calls are not implemented!");
+    std::vector<llvm::Value *> args;
+
+    for (auto &arg: node.arguments) {
+        args.push_back(visit(*arg));
+    }
+
+    return builder.CreateCall(module->getFunction(node.name.lexeme), llvm::ArrayRef<llvm::Value*>(args));
 }
 
 llvm::AllocaInst *codegen_llvm::CodeGeneratorLLVM::createAllocaInEntryBlock(
