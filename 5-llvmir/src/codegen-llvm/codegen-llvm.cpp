@@ -15,6 +15,8 @@
 #include <iostream>
 
 #include <fmt/core.h>
+#include <iostream>
+using namespace std;
 
 #define DEBUG_TYPE "codegen-llvm"
 
@@ -80,7 +82,7 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
             builder.CreateRet(llvm::Constant::getNullValue(retTy));
     }
 
-    // Validate the generated code, checking for consistency.
+    //Validate the generated code, checking for consistency.
     if (llvm::verifyFunction(*func, &llvm::errs())) {
         throw CodegenException(
             fmt::format("Function '{}' failed validation", node.name.lexeme));
@@ -91,20 +93,74 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
 
 llvm::Value *codegen_llvm::CodeGeneratorLLVM::visitIfStmt(ast::IfStmt &node) {
     // ASSIGNMENT: Implement if statements here.
-    throw CodegenException("ASSIGNMENT: if statements are not implemented!");
+    llvm::Function *current_function = builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock *entryif = llvm::BasicBlock::Create(context, "entryif", current_function);
+    llvm::BasicBlock *exit = llvm::BasicBlock::Create(context, "exit", current_function);
+    llvm::BasicBlock *entryelse;
+
+    if (node.else_clause != nullptr)
+        entryelse = llvm::BasicBlock::Create(context, "entryelse", current_function);
+
+    auto cmp = visit(*node.condition);
+    auto zero = llvm::ConstantInt::get(T_int, 0);
+
+    llvm::Value* cond = builder.CreateICmpNE(cmp,zero, "cond");
+
+    if (node.else_clause != nullptr)
+        builder.CreateCondBr(cond, entryif, entryelse);
+    else
+        builder.CreateCondBr(cond, entryif, exit);
+
+    builder.SetInsertPoint(entryif);
+    visit(*node.if_clause);
+    if (!isCurrentBasicBlockTerminated()) {    
+        builder.CreateBr(exit);   
+    }
+
+    if (node.else_clause != nullptr) {
+        builder.SetInsertPoint(entryelse);
+
+        visit(*node.else_clause);
+        if (!isCurrentBasicBlockTerminated()) {    
+            builder.CreateBr(exit);   
+        }
+    }
+
+
+    builder.SetInsertPoint(exit);
+    return nullptr;
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitWhileStmt(ast::WhileStmt &node) {
     // ASSIGNMENT: Implement while statements here.
-    throw CodegenException("ASSIGNMENT: while statements are not implemented!");
+    llvm::Function *current_function = builder.GetInsertBlock()->getParent();
+
+    llvm::BasicBlock *whilebody = llvm::BasicBlock::Create(context, "entrywhile",current_function);
+    llvm::BasicBlock *whilecond = llvm::BasicBlock::Create(context, "whilecond", current_function);
+    llvm::BasicBlock *whileend = llvm::BasicBlock::Create(context, "whileend", current_function);
+
+    builder.CreateBr(whilecond);
+    builder.SetInsertPoint(whilecond);
+    auto cmp = visit(*node.condition);
+    auto zero = llvm::ConstantInt::get(T_int, 0);
+
+    llvm::Value* cond = builder.CreateICmpNE(cmp, zero, "cond");
+    builder.CreateCondBr(cond, whilebody,whileend);
+    
+    builder.SetInsertPoint(whilebody);
+    visit(*node.body);
+    builder.CreateBr(whilecond);
+
+    builder.SetInsertPoint(whileend);
+    return(nullptr);
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitReturnStmt(ast::ReturnStmt &node) {
     if (node.value) {
         // return with value
-        llvm::Value *retVal = visit(*node.value);
+        llvm::Value* retVal = visit(*node.value);
         return builder.CreateRet(retVal);
     } else {
         // void return
@@ -288,7 +344,6 @@ codegen_llvm::CodeGeneratorLLVM::generateCompareFloat(llvm::CmpInst::Predicate p
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitUnaryOpExpr(ast::UnaryOpExpr &node) {
     // ASSIGNMENT: Implement unary operators here.
-    
     auto operand = visit(*node.operand);
 
     switch (node.op.type) {
@@ -340,7 +395,7 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncCallExpr(ast::FuncCallExpr &node) {
     // ASSIGNMENT: Implement function calls here.
     std::vector<llvm::Value *> args;
 
-    for (auto &arg: node.arguments) {
+    for (auto const &arg: node.arguments) {
         args.push_back(visit(*arg));
     }
 
