@@ -12,6 +12,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
+#include <iostream>
 
 #include <fmt/core.h>
 
@@ -59,6 +60,12 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
     // Set the insertion point of the builder to the end of this basic block.
     builder.SetInsertPoint(entry);
 
+    // put function arguments into local variables
+    int i = 0;
+    for (auto const &parameter : node.arguments) {
+        llvm::Value *var = visit(*parameter);
+        builder.CreateStore(func->getArg(i++), var);
+    }
 
     // Generate code for the body of the function.
     visit(*node.body);
@@ -105,99 +112,163 @@ codegen_llvm::CodeGeneratorLLVM::visitReturnStmt(ast::ReturnStmt &node) {
     }
 }
 
-llvm::Value *codegen_llvm::CodeGeneratorLLVM::visitVarDecl(ast::VarDecl &node) {
+// helper function to get the base type, of an array / var decl
+llvm::Type *
+codegen_llvm::CodeGeneratorLLVM::getBaseType(std::string lexeme) {
+    if (lexeme == "int")
+            return T_int;
+    else 
+    if (lexeme == "float")
+            return T_float;
+    else
+    if (lexeme == "string")
+            return llvm::Type::getInt8PtrTy(context);
+    return nullptr;
+}
+
+llvm::Value *
+codegen_llvm::CodeGeneratorLLVM::visitVarDecl(ast::VarDecl &node) {
     // ASSIGNMENT: Implement variable declarations here.
-    throw CodegenException(
-        "ASSIGNMENT: variable declarations are not implemented!");
+    llvm::Type* var_type = getBaseType(node.type.lexeme);
+    if (var_type == nullptr)
+            throw CodegenException("VarDecl not implemented yet for this type!");
+
+    llvm::AllocaInst *ptr = createAllocaInEntryBlock(var_type);
+    var_allocas[&node] = ptr;
+
+    // if init, initialize the variable
+    if (node.init != nullptr) {
+        llvm::Value *value = visit(*node.init);
+        builder.CreateStore(value, ptr);
+    }
+
+    return ptr;
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitArrayDecl(ast::ArrayDecl &node) {
     // ASSIGNMENT: Implement array declarations here.
-    throw CodegenException(
-        "ASSIGNMENT: array declarations are not implemented!");
+    llvm::Type* var_type = getBaseType(node.type.lexeme);
+    if (var_type == nullptr)
+            throw CodegenException("ArrayDecl not implemented yet for this type!");
+
+    llvm::AllocaInst *ptr = createAllocaInEntryBlock(var_type, visit(*node.size));
+    var_allocas[&node] = ptr;
+
+    return nullptr; // TODO, right thing to return?
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
     // ASSIGNMENT: Implement binary operators here.
-    llvm::Value *lhs = visit(*node.lhs);
-    llvm::Value *rhs = visit(*node.rhs);
+    llvm::Value *lhs;
+    llvm::Value *rhs;
+
+    rhs = visit(*node.rhs);
+
+    // assignments
+    if (node.op.type == TokenType::EQUALS) {
+            llvm::Value *ptr = var_allocas[symbol_table[(ast::Base*) &(*node.lhs)]];
+            switch (node.lhs->kind) {
+                case ast::Base::Kind::VarRefExpr:
+                    builder.CreateStore(rhs, ptr);
+                break;
+                case ast::Base::Kind::ArrayRefExpr:
+                {
+                    auto index = visit(*(((ast::ArrayRefExpr*) &(*node.lhs))->index));
+                    builder.CreateStore(rhs, builder.CreateGEP(ptr, index));
+                }
+                break;
+                default:
+                    throw CodegenException("unsupported lhs reference");
+            }
+            return rhs;
+    }
+
+    lhs = visit(*node.lhs);
 
     switch (node.op.type) {
         case (TokenType::CARET):
-            // TODO implement exponentiation using compiler intrinsic
-            throw CodegenException("not implemented");
+            if(lhs->getType() == T_int) {
+                // cast ints to floats
+                lhs = builder.CreateCast(llvm::Instruction::SIToFP, lhs, T_float);
+                rhs = builder.CreateCast(llvm::Instruction::SIToFP, rhs, T_float);
+
+                auto res_f = builder.CreateBinaryIntrinsic(llvm::Intrinsic::IndependentIntrinsics::pow, lhs, rhs);
+
+                return builder.CreateCast(llvm::Instruction::FPToSI, res_f, T_int);
+            } else {
+                return builder.CreateBinaryIntrinsic(llvm::Intrinsic::IndependentIntrinsics::pow, lhs, rhs);
+            }
             break;
         case (TokenType::STAR): // ok
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return builder.CreateMul(lhs, rhs);
             else
                 return builder.CreateFMul(lhs, rhs);
             break;
         case (TokenType::SLASH): // ok
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return builder.CreateSDiv(lhs, rhs);
             else
                 return builder.CreateFDiv(lhs, rhs);
             break;
         case (TokenType::PERCENT):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return builder.CreateSRem(lhs, rhs); // TODO juiste versie?
             else
                 return builder.CreateFRem(lhs, rhs);
             break;
         case (TokenType::PLUS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return builder.CreateAdd(lhs, rhs);
             else
                 return builder.CreateFAdd(lhs, rhs);
             break;
         case (TokenType::MINUS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return builder.CreateSub(lhs, rhs);
             else
-                return builder.CreateFRem(lhs, rhs);
+                return builder.CreateFSub(lhs, rhs);
             break;
         case (TokenType::LESS_THAN):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SLT, lhs, rhs); 
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OLT, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         case (TokenType::LESS_THAN_EQUALS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral) {
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SLE, lhs, rhs);
-            }
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OLE, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         case (TokenType::GREATER_THAN):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SGT, lhs, rhs);
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OGT, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         case (TokenType::GREATER_THAN_EQUALS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_SGE, lhs, rhs);
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OGE, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         case (TokenType::EQUALS_EQUALS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_EQ, lhs, rhs);
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_OEQ, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         case (TokenType::BANG_EQUALS):
-            if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+            if (lhs->getType() == T_int)
                 return generateCompareInt(llvm::CmpInst::Predicate::ICMP_NE, lhs, rhs);
             else
                 return generateCompareFloat(llvm::CmpInst::Predicate::FCMP_ONE, lhs, rhs); // clang seems to use unordered comparisons by default?
             break;
         default:
-            throw CodegenException("unsupported operand!");
+            throw CodegenException("unsupported binary operator!");
     }
     return nullptr;
 }
@@ -217,7 +288,22 @@ codegen_llvm::CodeGeneratorLLVM::generateCompareFloat(llvm::CmpInst::Predicate p
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitUnaryOpExpr(ast::UnaryOpExpr &node) {
     // ASSIGNMENT: Implement unary operators here.
-    throw CodegenException("ASSIGNMENT: unary operators are not implemented!");
+    
+    auto operand = visit(*node.operand);
+
+    switch (node.op.type) {
+        case(TokenType::PLUS):
+            return operand;
+            break;
+        case(TokenType::MINUS):
+            if (operand->getType() == T_int)
+                return builder.CreateSub(llvm::ConstantInt::get(T_int, 0), operand);
+            else
+                return builder.CreateFSub(llvm::ConstantFP::get(T_float, 0), operand);
+            break;
+        default:
+            throw CodegenException("unsupported unary operator!");
+    }
 }
 
 llvm::Value *
@@ -238,14 +324,15 @@ codegen_llvm::CodeGeneratorLLVM::visitStringLiteral(ast::StringLiteral &node) {
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitVarRefExpr(ast::VarRefExpr &node) {
     // ASSIGNMENT: Implement variable references here.
-    throw CodegenException(
-        "ASSIGNMENT: variable references are not implemented!");
+    llvm::AllocaInst *ptr = var_allocas[symbol_table[(ast::Base*) &(node)]];
+    return builder.CreateLoad(ptr->getAllocatedType(), ptr, node.name.lexeme);
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitArrayRefExpr(ast::ArrayRefExpr &node) {
     // ASSIGNMENT: Implement array references here.
-    throw CodegenException("ASSIGNMENT: array references are not implemented!");
+    llvm::AllocaInst *ptr = var_allocas[symbol_table[(ast::Base*) &(node)]];
+    return builder.CreateLoad(ptr->getAllocatedType(), builder.CreateGEP(ptr, visit(*node.index), node.name.lexeme));
 }
 
 llvm::Value *

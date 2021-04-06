@@ -20,6 +20,11 @@ void print_strings(string s)
     print_s(s);
 }
 
+int echo(int x)
+{
+    return x;
+}
+
 int main()
 {
     print_numbers(1, 1.5);
@@ -27,6 +32,8 @@ int main()
 
     print_strings("foo");
     print_strings("bar");
+
+    print(echo(1));
 
     return 0;
 }

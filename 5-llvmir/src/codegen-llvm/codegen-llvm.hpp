@@ -77,6 +77,11 @@ class CodeGeneratorLLVM
     // ASSIGNMENT: Add any helper functions or member variables (if any) here.
     llvm::Value* generateCompareInt(llvm::CmpInst::Predicate, llvm::Value* lhs, llvm::Value* rhs);
     llvm::Value* generateCompareFloat(llvm::CmpInst::Predicate, llvm::Value* lhs, llvm::Value* rhs);
+
+    // Get base llvm type, used in VarDecl or ArrayDeclb
+    llvm::Type* getBaseType(std::string lexeme);
+
+    std::map<ast::Base*, llvm::AllocaInst*> var_allocas;
 };
 } // namespace codegen_llvm
 
