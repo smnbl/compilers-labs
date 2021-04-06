@@ -14,6 +14,8 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <fmt/core.h>
+#include <iostream>
+using namespace std;
 
 #define DEBUG_TYPE "codegen-llvm"
 
@@ -65,6 +67,7 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
 
     // Check if we need to add an implicit return, in case the user didn't add
     // any.
+    
     if (!isCurrentBasicBlockTerminated()) {
         llvm::Type *retTy = func->getReturnType();
         if (retTy == T_void)
@@ -73,7 +76,7 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
             builder.CreateRet(llvm::Constant::getNullValue(retTy));
     }
 
-    // Validate the generated code, checking for consistency.
+    //Validate the generated code, checking for consistency.
     if (llvm::verifyFunction(*func, &llvm::errs())) {
         throw CodegenException(
             fmt::format("Function '{}' failed validation", node.name.lexeme));
@@ -84,20 +87,63 @@ codegen_llvm::CodeGeneratorLLVM::visitFuncDecl(ast::FuncDecl &node) {
 
 llvm::Value *codegen_llvm::CodeGeneratorLLVM::visitIfStmt(ast::IfStmt &node) {
     // ASSIGNMENT: Implement if statements here.
-    throw CodegenException("ASSIGNMENT: if statements are not implemented!");
+    llvm::Function *current_function = builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock *entryif = llvm::BasicBlock::Create(context, "entryif", current_function);
+    llvm::BasicBlock *entryelse = llvm::BasicBlock::Create(context, "entryelse", current_function);
+    llvm::BasicBlock *exit = llvm::BasicBlock::Create(context, "exit", current_function);
+    auto *cmp = visit(*node.condition);
+    auto zero = builder.getInt64(0);
+    llvm::Value* cond = builder.CreateICmpNE(cmp,zero, "cond");
+    
+    //llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), cond)
+    builder.CreateCondBr(cond,entryif, entryelse);
+    builder.SetInsertPoint(entryif);
+    visit(*node.if_clause);
+    if (!isCurrentBasicBlockTerminated()) {    
+        builder.CreateBr(exit);   
+    }
+    builder.SetInsertPoint(entryelse);
+    visit(*node.else_clause);
+    if (!isCurrentBasicBlockTerminated()) {    
+        builder.CreateBr(exit);   
+    }
+    builder.SetInsertPoint(exit);
+    return(nullptr);
+
+    //throw CodegenException("ASSIGNMENT: if statements are not implemented!");
+
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitWhileStmt(ast::WhileStmt &node) {
     // ASSIGNMENT: Implement while statements here.
-    throw CodegenException("ASSIGNMENT: while statements are not implemented!");
+    llvm::Function *current_function = builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock *whilebody = llvm::BasicBlock::Create(context, "entrywhile",current_function);
+    llvm::BasicBlock *whilecond = llvm::BasicBlock::Create(context, "whilecond", current_function);
+    llvm::BasicBlock *whileend = llvm::BasicBlock::Create(context, "whileend", current_function);
+    builder.CreateBr(whilecond);
+    builder.SetInsertPoint(whilecond);
+    auto cmp = visit(*node.condition);
+    auto zero = builder.getInt64(0);
+    llvm::Value* cond = builder.CreateICmpNE(cmp,zero, "cond");
+    builder.CreateCondBr(cond, whilebody,whileend);
+    
+    builder.SetInsertPoint(whilebody);
+    visit(*node.body);
+    builder.CreateBr(whilecond);
+    builder.SetInsertPoint(whileend);
+    
+    
+    return(nullptr);
+
+    //throw CodegenException("ASSIGNMENT: while statements are not implemented!");
 }
 
 llvm::Value *
 codegen_llvm::CodeGeneratorLLVM::visitReturnStmt(ast::ReturnStmt &node) {
     if (node.value) {
         // return with value
-        llvm::Value *retVal = visit(*node.value);
+        llvm::Value* retVal = visit(*node.value);
         return builder.CreateRet(retVal);
     } else {
         // void return
@@ -126,8 +172,12 @@ codegen_llvm::CodeGeneratorLLVM::visitBinaryOpExpr(ast::BinaryOpExpr &node) {
 
     switch (node.op.type) {
         case (TokenType::CARET):
+        throw CodegenException("exponents still todo");
             // TODO implement exponentiation using compiler intrinsic
-            throw CodegenException("not implemented");
+            //if (node.lhs->kind == ast::Base::Kind::IntLiteral)
+                //return builder.CreateBinaryIntrinsic( 1, lhs, rhs);
+            //else
+                //return builder.CreateBinaryIntrinsic( 1, lhs, rhs);
             break;
         case (TokenType::STAR): // ok
             if (node.lhs->kind == ast::Base::Kind::IntLiteral)
