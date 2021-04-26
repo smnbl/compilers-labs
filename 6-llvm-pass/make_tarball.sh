@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-FILES="src/codegen-llvm/codegen-llvm.hpp src/codegen-llvm/codegen-llvm.cpp "
+FILES="src/boundscheck/pass.cpp  REPORT.pdf extra-tests/"
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
