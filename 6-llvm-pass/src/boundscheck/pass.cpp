@@ -6,6 +6,8 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 
+#include "llvm/IR/DerivedTypes.h"
+
 #include <fmt/core.h>
 #include <list>
 
@@ -56,26 +58,58 @@ struct BoundsCheck : public FunctionPass {
         }
 
         // Process any GEP instructions
-        bool Changed = false;
+        bool changed;
+
         for (auto *GEP : WorkList) {
             LLVM_DEBUG(dbgs() << "BoundsCheck: found a GEP, " << *GEP << "\n");
 
             // ASSIGNMENT: Implement your pass here.
+            // get instruction location:
+            DILocation *location = (DILocation*) GEP->getMetadata("dbg");
+            auto filename = (const std::string) ((DIFile*) location->getScope()->getSubprogram()->getFile())->getFilename();
+			auto line_number = location->getLine();
 
-            // Error message template for static case:
+            LLVM_DEBUG(dbgs() << "filename: " << filename<< "\n");
+            LLVM_DEBUG(dbgs() << "line_number: " << line_number << "\n");
 
-            // auto message =
-            //     fmt::format("out-of-bounds array access detected at {}:{}",
-            //                 filename, line_number);
+            if (GEP->hasAllConstantIndices()) {
+            	// 1. static indexing
+				LLVM_DEBUG(dbgs() << "static!" << "\n");
 
+	            const ConstantInt* index_val = dyn_cast<ConstantInt>(GEP->getOperand(2));
+	            assert(index_val && "index_val cast to ConstantInt failed");
+	            uint64_t index = index_val->getZExtValue();
+				LLVM_DEBUG(dbgs() << "index: " << index << "\n");
 
-            // Error message template for dynamic case:
+	            auto array = dyn_cast<AllocaInst>(GEP->getOperand(0));
+	            assert(array && "array cast to AllocaInst failed");
 
-            // auto message = "out-of-bounds array access";
+	            auto array_type = dyn_cast<ArrayType>(array->getAllocatedType());
+	            assert(array_type && "could not dyn_cast to array_type!");
+	            uint64_t size = array_type->getNumElements();
 
+				LLVM_DEBUG(dbgs() << "size: " << size << "\n");
+
+				// perform static bounds check
+	            if (index >= size) {
+	            	llvm::report_fatal_error(fmt::format("out-of-bounds array access detected at {}:{}", filename, line_number));
+                }
+
+                changed = false;
+            } else {
+            	// 2. dynamic indexing
+				LLVM_DEBUG(dbgs() << "dynamic!" << "\n");
+
+	            // Error message template for dynamic case:
+
+	            auto message = "out-of-bounds array access";
+
+	            // perform code rewriting
+	            changed = true;
+			}
         }
 
-        return Changed;
+        return changed;
     }
 
   private:
