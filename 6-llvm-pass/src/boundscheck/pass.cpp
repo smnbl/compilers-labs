@@ -8,6 +8,8 @@
 
 #include "llvm/IR/DerivedTypes.h"
 
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+
 #include <fmt/core.h>
 #include <list>
 
@@ -36,6 +38,8 @@ struct BoundsCheck : public FunctionPass {
     /// `false` if it wasn't.
     bool runOnFunction(Function &F) override {
         IRBuilder<> Builder(F.getContext());
+        Type* T_int = llvm::Type::getInt64Ty(F.getContext());
+        Type *T_int32 = Type::getInt32Ty(F.getContext());
 
         LLVM_DEBUG({
             dbgs() << "BoundsCheck: processing function '";
@@ -65,34 +69,38 @@ struct BoundsCheck : public FunctionPass {
 
             // ASSIGNMENT: Implement your pass here.
             // get instruction location:
-            DILocation *location = (DILocation*) GEP->getMetadata("dbg");
-            auto filename = (const std::string) ((DIFile*) location->getScope()->getSubprogram()->getFile())->getFilename();
+            DILocation *location = dyn_cast<DILocation>(GEP->getMetadata("dbg"));
+            assert(location && "could not cast dbg to DILocation");
+            auto filename = ((DIFile*) location->getScope()->getSubprogram()->getFile())->getFilename();
+
+       		auto filename_string = (const std::string) filename;
 			auto line_number = location->getLine();
 
-            LLVM_DEBUG(dbgs() << "filename: " << filename<< "\n");
+            LLVM_DEBUG(dbgs() << "filename: " << filename_string << "\n");
             LLVM_DEBUG(dbgs() << "line_number: " << line_number << "\n");
 
+            auto array = dyn_cast<AllocaInst>(GEP->getOperand(0));
+            assert(array && "array cast to AllocaInst failed");
+
+            auto array_type = dyn_cast<ArrayType>(array->getAllocatedType());
+            assert(array_type && "could not dyn_cast to array_type!");
+            uint64_t size = array_type->getNumElements();
+
+			LLVM_DEBUG(dbgs() << "size: " << size << "\n");
+
             if (GEP->hasAllConstantIndices()) {
-            	// 1. static indexing
+            	// 2. static indexing
 				LLVM_DEBUG(dbgs() << "static!" << "\n");
 
 	            const ConstantInt* index_val = dyn_cast<ConstantInt>(GEP->getOperand(2));
 	            assert(index_val && "index_val cast to ConstantInt failed");
+
 	            uint64_t index = index_val->getZExtValue();
 				LLVM_DEBUG(dbgs() << "index: " << index << "\n");
 
-	            auto array = dyn_cast<AllocaInst>(GEP->getOperand(0));
-	            assert(array && "array cast to AllocaInst failed");
-
-	            auto array_type = dyn_cast<ArrayType>(array->getAllocatedType());
-	            assert(array_type && "could not dyn_cast to array_type!");
-	            uint64_t size = array_type->getNumElements();
-
-				LLVM_DEBUG(dbgs() << "size: " << size << "\n");
-
 				// perform static bounds check
-	            if (index >= size) {
-	            	llvm::report_fatal_error(fmt::format("out-of-bounds array access detected at {}:{}", filename, line_number));
+	            if (index >= size || index < 0) {
+	            	llvm::report_fatal_error(fmt::format("out-of-bounds array access detected at {}:{}", filename_string, line_number));
                 }
 
                 changed = false;
@@ -101,8 +109,24 @@ struct BoundsCheck : public FunctionPass {
 				LLVM_DEBUG(dbgs() << "dynamic!" << "\n");
 
 	            // Error message template for dynamic case:
-
 	            auto message = "out-of-bounds array access";
+
+	            BasicBlock *assertion_fails_block = llvm::BasicBlock::Create(F.getContext(), "bounds_assertion_failed", &F);;
+
+				// add cond before GEP
+				Builder.SetInsertPoint(GEP);
+	            Value* is_below = Builder.CreateICmpSLT(GEP->getOperand(2), llvm::ConstantInt::get(T_int, 0), "bounds check cond, index not below 0");
+	            Value* is_above = Builder.CreateICmpSGE(GEP->getOperand(2), llvm::ConstantInt::get(T_int, size), "bounds check cond, index not too big");
+	            Value* cond = Builder.CreateOr(is_above, is_below);
+
+				// split block
+				SplitBlockAndInsertIfThen(cond, GEP, true, nullptr, nullptr, nullptr, assertion_fails_block);
+
+	            Builder.SetInsertPoint(assertion_fails_block);
+				auto *filename_ptr = Builder.CreateGlobalStringPtr(filename_string);
+				auto *assertion_info = Builder.CreateGlobalStringPtr(message);
+	            Builder.CreateCall(Assert, llvm::ArrayRef<llvm::Value*>{assertion_info, filename_ptr, llvm::ConstantInt::get(T_int32, line_number)});
+	            Builder.CreateUnreachable();
 
 	            // perform code rewriting
 	            changed = true;
