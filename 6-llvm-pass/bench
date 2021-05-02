@@ -1,0 +1,9 @@
+#!/bin/sh
+
+iterations=50
+
+echo ">> unchecked"
+perf stat -r $iterations -d $1.exe
+
+echo ">> checked"
+perf stat -r $iterations -d $1.checked.exe
