@@ -40,6 +40,7 @@ struct BoundsCheck : public FunctionPass {
         IRBuilder<> Builder(F.getContext());
         Type* T_int = llvm::Type::getInt64Ty(F.getContext());
         Type *T_int32 = Type::getInt32Ty(F.getContext());
+        Type *T_int1 = Type::getInt1Ty(F.getContext());
 
         LLVM_DEBUG({
             dbgs() << "BoundsCheck: processing function '";
@@ -117,15 +118,25 @@ struct BoundsCheck : public FunctionPass {
 				Builder.SetInsertPoint(GEP);
 	            Value* is_below = Builder.CreateICmpSLT(GEP->getOperand(2), llvm::ConstantInt::get(T_int, 0), "bounds check cond, index not below 0");
 	            Value* is_above = Builder.CreateICmpSGE(GEP->getOperand(2), llvm::ConstantInt::get(T_int, size), "bounds check cond, index not too big");
-	            Value* cond = Builder.CreateOr(is_above, is_below);
+	            Value* is_out_of_bounds = Builder.CreateOr(is_above, is_below);
+
+
+				if (OptimiseBoundsCheck) {
+					// expect condition to fail (is_out_of_bounds == 0)
+					Value* ops[] = { is_out_of_bounds, ConstantInt::get(T_int1, 0) };
+					Type* types[] = {T_int1}; // select expect intrinsic that returns i1
+					Module *M = GEP->getParent()->getParent()->getParent();
+					Function *FnExpect = Intrinsic::getDeclaration(M, Intrinsic::expect, types);
+					is_out_of_bounds = Builder.CreateCall(FnExpect, ops);
+				}
 
 				// split block
-				SplitBlockAndInsertIfThen(cond, GEP, true, nullptr, nullptr, nullptr, assertion_fails_block);
+				SplitBlockAndInsertIfThen(is_out_of_bounds, GEP, true, nullptr, nullptr, nullptr, assertion_fails_block);
 
 	            Builder.SetInsertPoint(assertion_fails_block);
 				auto *filename_ptr = Builder.CreateGlobalStringPtr(filename_string);
 				auto *assertion_info = Builder.CreateGlobalStringPtr(message);
-	            Builder.CreateCall(Assert, llvm::ArrayRef<llvm::Value*>{assertion_info, filename_ptr, llvm::ConstantInt::get(T_int32, line_number)});
+	            Builder.CreateCall(Assert, ArrayRef<Value*>{assertion_info, filename_ptr, ConstantInt::get(T_int32, line_number)});
 	            Builder.CreateUnreachable();
 
 	            // perform code rewriting

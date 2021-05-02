@@ -1,6 +1,6 @@
 #!/bin/sh
 
-iterations=50
+iterations=10
 
 echo ">> unchecked"
 perf stat -r $iterations -d $1.exe
