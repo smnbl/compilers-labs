@@ -2,8 +2,13 @@
 
 iterations=10
 
+echo "> unoptimised"
 echo ">> unchecked"
 perf stat -r $iterations -d $1.exe
 
 echo ">> checked"
 perf stat -r $iterations -d $1.checked.exe
+
+echo ">> checked (with optimisation)"
+perf stat -r $iterations -d $1.opt.checked.exe
+

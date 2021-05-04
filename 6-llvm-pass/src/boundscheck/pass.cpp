@@ -74,8 +74,8 @@ struct BoundsCheck : public FunctionPass {
             assert(location && "could not cast dbg to DILocation");
             auto filename = ((DIFile*) location->getScope()->getSubprogram()->getFile())->getFilename();
 
-       		auto filename_string = (const std::string) filename;
-			auto line_number = location->getLine();
+            auto filename_string = (const std::string) filename;
+            auto line_number = location->getLine();
 
             LLVM_DEBUG(dbgs() << "filename: " << filename_string << "\n");
             LLVM_DEBUG(dbgs() << "line_number: " << line_number << "\n");
@@ -87,61 +87,61 @@ struct BoundsCheck : public FunctionPass {
             assert(array_type && "could not dyn_cast to array_type!");
             uint64_t size = array_type->getNumElements();
 
-			LLVM_DEBUG(dbgs() << "size: " << size << "\n");
+            LLVM_DEBUG(dbgs() << "size: " << size << "\n");
 
             if (GEP->hasAllConstantIndices()) {
-            	// 2. static indexing
-				LLVM_DEBUG(dbgs() << "static!" << "\n");
+                // 2. static indexing
+                LLVM_DEBUG(dbgs() << "static!" << "\n");
 
-	            const ConstantInt* index_val = dyn_cast<ConstantInt>(GEP->getOperand(2));
-	            assert(index_val && "index_val cast to ConstantInt failed");
+                    const ConstantInt* index_val = dyn_cast<ConstantInt>(GEP->getOperand(2));
+                    assert(index_val && "index_val cast to ConstantInt failed");
+        
+                    uint64_t index = index_val->getZExtValue();
+                LLVM_DEBUG(dbgs() << "index: " << index << "\n");
 
-	            uint64_t index = index_val->getZExtValue();
-				LLVM_DEBUG(dbgs() << "index: " << index << "\n");
-
-				// perform static bounds check
-	            if (index >= size || index < 0) {
-	            	llvm::report_fatal_error(fmt::format("out-of-bounds array access detected at {}:{}", filename_string, line_number));
+                                // perform static bounds check
+                    if (index >= size || index < 0) {
+                        llvm::report_fatal_error(fmt::format("out-of-bounds array access detected at {}:{}", filename_string, line_number));
                 }
 
                 changed = false;
             } else {
-            	// 2. dynamic indexing
-				LLVM_DEBUG(dbgs() << "dynamic!" << "\n");
+                // 2. dynamic indexing
+                                LLVM_DEBUG(dbgs() << "dynamic!" << "\n");
 
-	            // Error message template for dynamic case:
-	            auto message = "out-of-bounds array access";
+                    // Error message template for dynamic case:
+                    auto message = "out-of-bounds array access";
 
-	            BasicBlock *assertion_fails_block = llvm::BasicBlock::Create(F.getContext(), "bounds_assertion_failed", &F);;
+                    BasicBlock *out_of_bounds_block = llvm::BasicBlock::Create(F.getContext(), "bounds_assertion_failed", &F);;
 
-				// add cond before GEP
-				Builder.SetInsertPoint(GEP);
-	            Value* is_below = Builder.CreateICmpSLT(GEP->getOperand(2), llvm::ConstantInt::get(T_int, 0), "bounds check cond, index not below 0");
-	            Value* is_above = Builder.CreateICmpSGE(GEP->getOperand(2), llvm::ConstantInt::get(T_int, size), "bounds check cond, index not too big");
-	            Value* is_out_of_bounds = Builder.CreateOr(is_above, is_below);
+                                // add cond before GEP
+                                Builder.SetInsertPoint(GEP);
+                    Value* is_below = Builder.CreateICmpSLT(GEP->getOperand(2), llvm::ConstantInt::get(T_int, 0), "bounds check cond, index below 0?");
+                    Value* is_above = Builder.CreateICmpSGE(GEP->getOperand(2), llvm::ConstantInt::get(T_int, size), "bounds check cond, index too big?");
+                    Value* is_out_of_bounds = Builder.CreateOr(is_above, is_below);
 
 
-				if (OptimiseBoundsCheck) {
-					// expect condition to fail (is_out_of_bounds == 0)
-					Value* ops[] = { is_out_of_bounds, ConstantInt::get(T_int1, 0) };
-					Type* types[] = {T_int1}; // select expect intrinsic that returns i1
-					Module *M = GEP->getParent()->getParent()->getParent();
-					Function *FnExpect = Intrinsic::getDeclaration(M, Intrinsic::expect, types);
-					is_out_of_bounds = Builder.CreateCall(FnExpect, ops);
-				}
+                                if (OptimiseBoundsCheck) {
+                                        // expect condition to fail (is_out_of_bounds == 0)
+                                        Value* ops[] = { is_out_of_bounds, ConstantInt::get(T_int1, 0) };
+                                        Type* types[] = {T_int1}; // select expect intrinsic that returns i1
+                                        Module *M = GEP->getParent()->getParent()->getParent();
+                                        Function *FnExpect = Intrinsic::getDeclaration(M, Intrinsic::expect, types);
+                                        is_out_of_bounds = Builder.CreateCall(FnExpect, ops);
+                                }
 
-				// split block
-				SplitBlockAndInsertIfThen(is_out_of_bounds, GEP, true, nullptr, nullptr, nullptr, assertion_fails_block);
+                                // split block
+                                SplitBlockAndInsertIfThen(is_out_of_bounds, GEP, true, nullptr, nullptr, nullptr, out_of_bounds_block);
 
-	            Builder.SetInsertPoint(assertion_fails_block);
-				auto *filename_ptr = Builder.CreateGlobalStringPtr(filename_string);
-				auto *assertion_info = Builder.CreateGlobalStringPtr(message);
-	            Builder.CreateCall(Assert, ArrayRef<Value*>{assertion_info, filename_ptr, ConstantInt::get(T_int32, line_number)});
-	            Builder.CreateUnreachable();
+                    Builder.SetInsertPoint(out_of_bounds_block);
+                                auto *filename_ptr = Builder.CreateGlobalStringPtr(filename_string);
+                                auto *assertion_info = Builder.CreateGlobalStringPtr(message);
+                    Builder.CreateCall(Assert, ArrayRef<Value*>{assertion_info, filename_ptr, ConstantInt::get(T_int32, line_number)});
+                    Builder.CreateUnreachable();
 
-	            // perform code rewriting
-	            changed = true;
-			}
+                    // perform code rewriting
+                    changed = true;
+                        }
         }
 
         return changed;

@@ -7,6 +7,11 @@ opt -load ./libboundscheck.so -microcc-bc $1.ll -S -o $1.checked.ll
 llc --relocation-model=pic $1.checked.ll -o $1.checked.s
 g++ $1.checked.s libruntime.a -o $1.checked.exe
 
+# opt checked
+opt -load ./libboundscheck.so -microcc-bc -optimise-microcc-bc $1.ll -S -o $1.opt.checked.ll
+llc --relocation-model=pic $1.opt.checked.ll -o $1.opt.checked.s
+g++ $1.opt.checked.s libruntime.a -o $1.opt.checked.exe
+
 # unchecked
 llc --relocation-model=pic $1.ll -o $1.s
 g++ $1.s libruntime.a -o $1.exe
