@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "name": "Launch microcc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [
+                "${input:microccArgs}"
+            ],
+            "cwd": "${command:cmake.getLaunchTargetDirectory}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "microccArgs",
+            "description": "Extra commandline arguments to microcc",
+            "default": "../examples/SOMEFILEHERE.c"
+        }
+    ]
+}
